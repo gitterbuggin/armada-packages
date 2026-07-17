@@ -53,7 +53,7 @@ podman run --rm \
             # that selector and the FIT-signature options must go too, or
             # olddefconfig turns it back on.
             #
-            # Also select this board's DT via CONFIG_DEFAULT_DEVICE_TREE rather
+            # Also select the board DT via CONFIG_DEFAULT_DEVICE_TREE rather
             # than the deprecated DEVICE_TREE= make var: with CONFIG_OF_UPSTREAM
             # the dtb that actually gets built comes from the config, while
             # DEVICE_TREE= only changes which .dtb the final existence check
