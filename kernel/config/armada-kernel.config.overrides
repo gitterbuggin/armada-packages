@@ -237,4 +237,35 @@ CONFIG_PINCTRL_SM8750=y
 CONFIG_INTERCONNECT_QCOM_SM8750=y
 CONFIG_BT_QCA=m
 
+# ============== SDM845 (AYN Odin / Odin Pro) ==============
+# Core SoC support is upstream; the odin-gamepad, td4328 panel, and qcom_fg
+# drivers come from patches/07xx (postmarketOS ayn-odin kernel).
+CONFIG_PINCTRL_SDM845=y
+CONFIG_SDM_GCC_845=y
+CONFIG_SDM_DISPCC_845=y                     # =y like the other dispcc: DRM_MSM=y needs it built-in
+CONFIG_SDM_GPUCC_845=y
+CONFIG_SDM_VIDEOCC_845=y
+CONFIG_SDM_LPASSCC_845=y
+CONFIG_SDM_CAMCC_845=y
+CONFIG_INTERCONNECT_QCOM_SDM845=y
+CONFIG_PHY_QCOM_QUSB2=y                     # SDM845 USB2 PHY (QMP USB/UFS already =y above)
+CONFIG_DRM_PANEL_INNOLUX_TD4328=y           # AYN Odin (V1 screen)
+CONFIG_JOYSTICK_ODIN_GAMEPAD=m              # ADC sticks + GPIO buttons
+CONFIG_QCOM_SPMI_RRADC=m                    # pmi8998 round-robin ADC (charger io-channels)
+CONFIG_CHARGER_QCOM_SMB2=m                  # pmi8998 charger
+CONFIG_BATTERY_QCOM_FG=m                    # pmi8998 fuel gauge (patches/0702)
+CONFIG_ATH10K=m                             # WCN3990 Wi-Fi
+CONFIG_ATH10K_SNOC=m
+CONFIG_BT_HCIUART=m                         # WCN3990 BT over UART serdev
+CONFIG_BT_HCIUART_QCA=y
+CONFIG_SLIMBUS=m                            # WCD9340 codec attaches over SLIMBus
+CONFIG_SLIM_QCOM_NGD_CTRL=m
+CONFIG_SND_SOC_QDSP6=m                      # Q6 DSP audio (APR is =y above)
+CONFIG_SND_SOC_SDM845=m                     # sdm845 sound card machine driver
+CONFIG_SND_SOC_WCD934X=m                    # WCD9340/WCD9341 codec
+CONFIG_SND_SOC_WSA881X=m                    # soundwire speaker amps
+CONFIG_MFD_WCD934X=m
+CONFIG_CAN=m                                # odin dts has an mcp2517fd CAN controller on SPI
+CONFIG_CAN_MCP251XFD=m
+
 CONFIG_DEVFREQ_GOV_PERFORMANCE=y

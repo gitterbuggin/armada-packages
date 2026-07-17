@@ -106,3 +106,10 @@ sm8750-adreno-a830-gpu-driver.patch
 0044-clk-qcom-gcc-sm8750-Do-not-turn-off-PCIe-GDSCs-durin.patch
 0045-Bluetooth-qca-add-WCN7860-support.patch
 0600-ROCKNIX-sm8750-tsens-thermal-zones.patch
+
+# ============== SDM845 (AYN Odin / Odin Pro) ==============
+# Drivers from the postmarketOS ayn-odin kernel (gitlab.com/jenneron/linux);
+# core SDM845 SoC support is already upstream.
+0700-input-add-ayn-odin-gamepad-driver.patch
+0701-drm-panel-add-innolux-td4328-panel.patch
+0702-power-supply-add-qcom-fg-and-pmi8998-fg-node.patch

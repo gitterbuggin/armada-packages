@@ -226,3 +226,12 @@ to a commit, or `armada` if it's original; a URL source with no `notes` is verba
 - `dts/sm8650-konkr-pf.dts.patch`
   source: https://github.com/ROCKNIX/distribution/commit/242e3d0840cbe865fb152277e0feaca9ce48caef#diff-b5707cd5abd5a9b2bb7de35a0e9870e9c0c3ae9d71cb74166afbb438f4353606
   notes: edits dts/sm8650-konkr-pf.dts
+- `patches/0700-input-add-ayn-odin-gamepad-driver.patch`
+  source: https://gitlab.com/jenneron/linux/-/blob/87349bbdebbd62f0a235cdcc31dc25f507fc444f/drivers/input/joystick/odin-gamepad.c
+  notes: driver + Kconfig/Makefile wiring regenerated against 7.0.11
+- `patches/0701-drm-panel-add-innolux-td4328-panel.patch`
+  source: https://gitlab.com/jenneron/linux/-/blob/87349bbdebbd62f0a235cdcc31dc25f507fc444f/drivers/gpu/drm/panel/panel-innolux-td4328.c
+  notes: driver + Kconfig/Makefile wiring regenerated against 7.0.11
+- `patches/0702-power-supply-add-qcom-fg-and-pmi8998-fg-node.patch`
+  source: https://gitlab.com/jenneron/linux/-/blob/87349bbdebbd62f0a235cdcc31dc25f507fc444f/drivers/power/supply/qcom_fg.c
+  notes: fuel-gauge driver + minimal pmi8998.dtsi node (haptics parts of the jenneron dtsi diff dropped)
