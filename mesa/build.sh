@@ -14,7 +14,7 @@ SUBPKGS="mesa-filesystem mesa-libgbm mesa-dri-drivers mesa-vulkan-drivers mesa-l
 CCACHE_DIR="${CCACHE_DIR:-${REPO}/.ccache}"; mkdir -p "${CCACHE_DIR}"
 
 mkdir -p out; rm -f out/*
-podman run --rm \
+podman run --rm "${ARMADA_PODMAN_SECOPTS[@]}" \
     -v "${REPO}:/work:Z" -w /work \
     -v "${CCACHE_DIR}:/ccache:Z" \
     -e CCACHE_DIR=/ccache -e CCACHE_MAXSIZE=2G \
