@@ -1,25 +1,27 @@
-From 5107996b7f7211ec7cffdaef57d171ce9443d19c Mon Sep 17 00:00:00 2001
-From: armada <armada@local>
-Date: Fri, 17 Jul 2026 12:52:27 -0500
-Subject: [PATCH 3/3] power: supply: Add Qualcomm PMIC fuel gauge driver +
- pmi8998 FG node
+From 1ddc99743b4c6ea18e3fdab58c3ad02cbefda94c Mon Sep 17 00:00:00 2001
+From: Contributor <me@Contributorr.co>
+Date: Fri, 17 Jul 2026 16:33:09 -0500
+Subject: [PATCH] power: supply: Add Qualcomm PMIC fuel gauge driver + pmi8998
+ FG node
 
 qcom_fg fuel gauge driver and the matching pmi8998.dtsi fuel-gauge@4000
 node, needed for battery state of charge on the AYN Odin (SDM845). From
-https://gitlab.com/jenneron/linux (pmOS ayn-odin kernel).
+https://gitlab.com/jenneron/linux (pmOS ayn-odin kernel). Ported to 7.0.11:
+power_supply_config.of_node -> .fwnode, power_supply_get_by_phandle() ->
+power_supply_get_by_reference(), and platform_driver .remove now returns void.
 ---
  arch/arm64/boot/dts/qcom/pmi8998.dtsi |   10 +
  drivers/power/supply/Kconfig          |    8 +
  drivers/power/supply/Makefile         |    1 +
- drivers/power/supply/qcom_fg.c        | 1320 +++++++++++++++++++++++++
- 4 files changed, 1339 insertions(+)
+ drivers/power/supply/qcom_fg.c        | 1319 +++++++++++++++++++++++++
+ 4 files changed, 1338 insertions(+)
  create mode 100644 drivers/power/supply/qcom_fg.c
 
 diff --git a/arch/arm64/boot/dts/qcom/pmi8998.dtsi b/arch/arm64/boot/dts/qcom/pmi8998.dtsi
-index cd3f0790f..17f3e3a65 100644
+index cd3f079..17f3e3a 100644
 --- a/arch/arm64/boot/dts/qcom/pmi8998.dtsi
 +++ b/arch/arm64/boot/dts/qcom/pmi8998.dtsi
-@@ -44,6 +44,16 @@ pmi8998_rradc: adc@4500 {
+@@ -44,6 +44,16 @@
  			reg = <0x4500>;
  			#io-channel-cells = <1>;
  		};
@@ -37,7 +39,7 @@ index cd3f0790f..17f3e3a65 100644
  
  	pmi8998_lsid1: pmic@3 {
 diff --git a/drivers/power/supply/Kconfig b/drivers/power/supply/Kconfig
-index 92f9f7aae..4d4345aa4 100644
+index 92f9f7a..4d4345a 100644
 --- a/drivers/power/supply/Kconfig
 +++ b/drivers/power/supply/Kconfig
 @@ -1113,6 +1113,14 @@ config BATTERY_UG3105
@@ -56,7 +58,7 @@ index 92f9f7aae..4d4345aa4 100644
  	tristate "Qualcomm PMI8998 PMIC charger driver"
  	depends on MFD_SPMI_PMIC
 diff --git a/drivers/power/supply/Makefile b/drivers/power/supply/Makefile
-index 4b79d5abc..fadc617a5 100644
+index 4b79d5a..fadc617 100644
 --- a/drivers/power/supply/Makefile
 +++ b/drivers/power/supply/Makefile
 @@ -38,6 +38,7 @@ obj-$(CONFIG_BATTERY_LEGO_EV3)	+= lego_ev3_battery.o
@@ -69,10 +71,10 @@ index 4b79d5abc..fadc617a5 100644
  obj-$(CONFIG_BATTERY_COLLIE)	+= collie_battery.o
 diff --git a/drivers/power/supply/qcom_fg.c b/drivers/power/supply/qcom_fg.c
 new file mode 100644
-index 000000000..f8dd93aa2
+index 0000000..2c1fa94
 --- /dev/null
 +++ b/drivers/power/supply/qcom_fg.c
-@@ -0,0 +1,1320 @@
+@@ -0,0 +1,1319 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +/* Copyright (c) 2020, The Linux Foundation. All rights reserved. */
 +
@@ -86,6 +88,7 @@ index 000000000..f8dd93aa2
 +#include <linux/of_irq.h>
 +#include <linux/platform_device.h>
 +#include <linux/power_supply.h>
++#include <linux/property.h>
 +#include <linux/regmap.h>
 +#include <linux/types.h>
 +#include <linux/workqueue.h>
@@ -1231,7 +1234,7 @@ index 000000000..f8dd93aa2
 +	}
 +
 +	supply_config.drv_data = chip;
-+	supply_config.of_node = pdev->dev.of_node;
++	supply_config.fwnode = dev_fwnode(&pdev->dev);
 +
 +	chip->batt_psy = devm_power_supply_register(chip->dev,
 +			&batt_psy_desc, &supply_config);
@@ -1334,7 +1337,7 @@ index 000000000..f8dd93aa2
 +	}
 +
 +	/* Optional: Get charger power supply for status checking */
-+	chip->chg_psy = power_supply_get_by_phandle(chip->dev->of_node,
++	chip->chg_psy = power_supply_get_by_reference(dev_fwnode(chip->dev),
 +							"power-supplies");
 +	if (IS_ERR(chip->chg_psy)) {
 +		ret = PTR_ERR(chip->chg_psy);
@@ -1358,7 +1361,7 @@ index 000000000..f8dd93aa2
 +	return 0;
 +}
 +
-+static int qcom_fg_remove(struct platform_device *pdev)
++static void qcom_fg_remove(struct platform_device *pdev)
 +{
 +	struct qcom_fg_chip *chip = platform_get_drvdata(pdev);
 +
@@ -1366,8 +1369,6 @@ index 000000000..f8dd93aa2
 +
 +	if(chip->sram_wq)
 +		destroy_workqueue(chip->sram_wq);
-+
-+	return 0;
 +}
 +
 +static const struct of_device_id fg_match_id_table[] = {
