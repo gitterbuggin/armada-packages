@@ -45,6 +45,20 @@ podman run --rm \
         for board in sdm845-ayn-odin sdm845-ayn-odin-m2; do
             rm -rf .output
             make O=.output CROSS_COMPILE="${CROSS_COMPILE}" qcom_defconfig
+            # Fedora 44 OpenSSL dropped the deprecated <openssl/engine.h>, which
+            # U-Boot 2024.10 still includes unconditionally in its libcrypto
+            # host tools (rsa-sign.c/aes-encrypt.c). We do not use FIT/verified
+            # boot (ABL loads a plain boot.img), so drop TOOLS_LIBCRYPTO. It is
+            # default-y and select-ed by TOOLS_KWBIMAGE (Marvell-only), so both
+            # that selector and the FIT-signature options must go too, or
+            # olddefconfig turns it back on.
+            ./scripts/config --file .output/.config \
+                -d TOOLS_KWBIMAGE -d TOOLS_LIBCRYPTO \
+                -d FIT_SIGNATURE -d SPL_FIT_SIGNATURE -d VPL_FIT_SIGNATURE
+            make O=.output CROSS_COMPILE="${CROSS_COMPILE}" olddefconfig
+            # Fail loudly if a board/def selector re-enabled it despite the above.
+            grep -q "^CONFIG_TOOLS_LIBCRYPTO=y" .output/.config \
+                && { echo "ERROR: TOOLS_LIBCRYPTO still on; another Kconfig selects it"; exit 1; } || true
             make O=.output -j"$(nproc)" CROSS_COMPILE="${CROSS_COMPILE}" DEVICE_TREE="qcom/${board}"
             gzip -c .output/u-boot-nodtb.bin > .output/u-boot-nodtb.bin.gz
             cat .output/u-boot-nodtb.bin.gz \
