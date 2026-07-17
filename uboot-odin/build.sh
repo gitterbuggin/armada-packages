@@ -52,14 +52,22 @@ podman run --rm \
             # default-y and select-ed by TOOLS_KWBIMAGE (Marvell-only), so both
             # that selector and the FIT-signature options must go too, or
             # olddefconfig turns it back on.
+            #
+            # Also select this board's DT via CONFIG_DEFAULT_DEVICE_TREE rather
+            # than the deprecated DEVICE_TREE= make var: with CONFIG_OF_UPSTREAM
+            # the dtb that actually gets built comes from the config, while
+            # DEVICE_TREE= only changes which .dtb the final existence check
+            # looks for — so mixing them builds -m2 but checks for the non-m2
+            # and fails. qcom_defconfig defaults this to the -m2 board.
             ./scripts/config --file .output/.config \
                 -d TOOLS_KWBIMAGE -d TOOLS_LIBCRYPTO \
-                -d FIT_SIGNATURE -d SPL_FIT_SIGNATURE -d VPL_FIT_SIGNATURE
+                -d FIT_SIGNATURE -d SPL_FIT_SIGNATURE -d VPL_FIT_SIGNATURE \
+                --set-str DEFAULT_DEVICE_TREE "qcom/${board}"
             make O=.output CROSS_COMPILE="${CROSS_COMPILE}" olddefconfig
             # Fail loudly if a board/def selector re-enabled it despite the above.
             grep -q "^CONFIG_TOOLS_LIBCRYPTO=y" .output/.config \
                 && { echo "ERROR: TOOLS_LIBCRYPTO still on; another Kconfig selects it"; exit 1; } || true
-            make O=.output -j"$(nproc)" CROSS_COMPILE="${CROSS_COMPILE}" DEVICE_TREE="qcom/${board}"
+            make O=.output -j"$(nproc)" CROSS_COMPILE="${CROSS_COMPILE}"
             gzip -c .output/u-boot-nodtb.bin > .output/u-boot-nodtb.bin.gz
             cat .output/u-boot-nodtb.bin.gz \
                 ".output/dts/upstream/src/arm64/qcom/${board}.dtb" \
