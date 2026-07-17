@@ -13,12 +13,26 @@ source ../toolchain.env
 
 mkdir -p out; rm -f out/*
 
+# Match the kernel package: aarch64 host builds natively; other hosts (x86_64)
+# run a native container and cross-compile with the aarch64 toolchain rather
+# than emulating the whole U-Boot build under qemu.
+if [[ "$(uname -m)" == "aarch64" ]]; then
+    PLATFORM="linux/arm64"
+    TOOLCHAIN_PKGS="gcc binutils"
+    CROSS=""
+else
+    PLATFORM="linux/amd64"
+    TOOLCHAIN_PKGS="gcc binutils gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu"
+    CROSS="aarch64-linux-gnu-"
+fi
+
 podman run --rm \
     -e REPO_URL="${REPO_URL}" -e COMMIT="${COMMIT}" -e VERSION="${VERSION}" \
+    -e CROSS_COMPILE="${CROSS}" \
     -v "${REPO}:/work:Z" -w /work \
-    --platform linux/aarch64 \
+    --platform "${PLATFORM}" \
     "${BUILDER_IMAGE}" bash -euxc '
-        dnf -y install gcc binutils make bc bison flex openssl-devel \
+        dnf -y install '"${TOOLCHAIN_PKGS}"' make bc bison flex openssl-devel \
             gnutls-devel dtc swig python3-devel python3-setuptools \
             python3-pyelftools git-core gzip xz uboot-tools findutils \
             diffutils gawk grep sed coreutils hostname tar
@@ -30,8 +44,8 @@ podman run --rm \
         cd "${SRC}"
         for board in sdm845-ayn-odin sdm845-ayn-odin-m2; do
             rm -rf .output
-            make O=.output qcom_defconfig
-            make O=.output -j"$(nproc)" DEVICE_TREE="qcom/${board}"
+            make O=.output CROSS_COMPILE="${CROSS_COMPILE}" qcom_defconfig
+            make O=.output -j"$(nproc)" CROSS_COMPILE="${CROSS_COMPILE}" DEVICE_TREE="qcom/${board}"
             gzip -c .output/u-boot-nodtb.bin > .output/u-boot-nodtb.bin.gz
             cat .output/u-boot-nodtb.bin.gz \
                 ".output/dts/upstream/src/arm64/qcom/${board}.dtb" \
