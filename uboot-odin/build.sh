@@ -34,7 +34,7 @@ podman run --rm \
     "${BUILDER_IMAGE}" bash -euxc '
         dnf -y install '"${TOOLCHAIN_PKGS}"' make bc bison flex openssl-devel \
             gnutls-devel dtc swig python3-devel python3-setuptools \
-            python3-pyelftools git-core gzip xz uboot-tools findutils \
+            python3-pyelftools git-core gzip xz xxd uboot-tools findutils \
             diffutils gawk grep sed coreutils hostname tar
         SRC=/tmp/u-boot-src
         rm -rf "${SRC}"
