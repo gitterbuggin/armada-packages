@@ -27,7 +27,11 @@ image pkg: (artifacts pkg)
     #!/usr/bin/env bash
     set -euo pipefail
     bash scripts/stage.sh {{pkg}}
-    buildah build -f oci/Containerfile -t "{{registry}}/{{pkg}}:latest" .
+    # These packages are always arm64; without --platform, buildah stamps the
+    # carrier with the host arch, so on an x86_64 host the image is labelled
+    # amd64 and armada's `podman build --platform linux/arm64` can't consume it
+    # via FROM (it tries to pull the missing arm64 variant instead).
+    buildah build --platform linux/arm64 -f oci/Containerfile -t "{{registry}}/{{pkg}}:latest" .
     echo "==> {{registry}}/{{pkg}}:latest"
 
 # Build artifacts for every package
