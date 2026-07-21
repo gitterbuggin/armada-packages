@@ -1062,3 +1062,19 @@
 	drive-strength = <2>;
 	bias-disable;
 };
+
+/ {
+	reserved-memory {
+		/*
+		 * Bootloader splash/console framebuffer, left scanning out by the
+		 * ABL. Without this carve-out the region is plain System RAM:
+		 * simpledrm cannot ioremap it (arm64 forbids ioremap of mapped
+		 * RAM) and the allocator reuses the pages while the display is
+		 * still scanning them - the panel shows kernel memory as noise.
+		 */
+		cont_splash_mem: cont-splash@9d400000 {
+			reg = <0x0 0x9d400000 0x0 0x2400000>;
+			no-map;
+		};
+	};
+};
