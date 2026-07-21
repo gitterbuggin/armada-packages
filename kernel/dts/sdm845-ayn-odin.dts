@@ -440,7 +440,7 @@
 		rotation = <90>;
 
 		pinctrl-names = "default";
-		pinctrl-0 = <&panel_reset_active>;
+		pinctrl-0 = <&panel_reset_active &mdp_vsync_active>;
 
 		port {
 			panel_in: endpoint {
@@ -923,6 +923,19 @@
 		function = "gpio";
 		drive-strength = <16>;
 		bias-disable;
+	};
+
+	/*
+	 * TE (tearing effect) from the command-mode TD4328 into the DPU's
+	 * vsync input. Without this mux the DPU free-runs against the panel's
+	 * self-refresh: a flickering tear band that duplicates other screen
+	 * content, visible from fbcon through gamescope.
+	 */
+	mdp_vsync_active: mdp-vsync-active {
+		pins = "gpio10";
+		function = "mdp_vsync";
+		drive-strength = <2>;
+		bias-pull-down;
 	};
 
 	hdmi_hpd: hdmi-hpd-active {
