@@ -597,8 +597,11 @@
 };
 
 &ibb {
-	regulator-min-microvolt = <4600000>;
-	regulator-max-microvolt = <6000000>;
+	/* Panel bias: kernel constraint application left this at the 4.6V range
+	 * minimum (measured live); the panel needs 5.5V — washed colors and a
+	 * flickering ghost band at 4.6V. Pin it. */
+	regulator-min-microvolt = <5500000>;
+	regulator-max-microvolt = <5500000>;
 	regulator-over-current-protection;
 	regulator-pull-down;
 	regulator-soft-start;
@@ -606,8 +609,8 @@
 };
 
 &lab {
-	regulator-min-microvolt = <4600000>;
-	regulator-max-microvolt = <6000000>;
+	regulator-min-microvolt = <5500000>;
+	regulator-max-microvolt = <5500000>;
 	regulator-over-current-protection;
 	regulator-pull-down;
 	regulator-soft-start;
