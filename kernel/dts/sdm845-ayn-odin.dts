@@ -1091,3 +1091,13 @@
 		};
 	};
 };
+
+&mdss {
+	/*
+	 * Fully reset the display block at probe (patches/0703 adds the BCR).
+	 * The ABL leaves the DPU live for continuous splash; inheriting that
+	 * state produces a flickering tear band duplicating other screen
+	 * content, regardless of panel mode.
+	 */
+	resets = <&dispcc DISP_CC_MDSS_CORE_BCR>;
+};

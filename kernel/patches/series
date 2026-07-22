@@ -113,3 +113,4 @@ sm8750-adreno-a830-gpu-driver.patch
 0700-input-add-ayn-odin-gamepad-driver.patch
 0701-drm-panel-add-innolux-td4328-panel.patch
 0702-power-supply-add-qcom-fg-and-pmi8998-fg-node.patch
+0703-dispcc-sdm845-add-mdss-core-reset.patch
