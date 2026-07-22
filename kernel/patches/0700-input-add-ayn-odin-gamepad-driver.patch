@@ -49,7 +49,7 @@ new file mode 100644
 index 000000000..17da8f0b9
 --- /dev/null
 +++ b/drivers/input/joystick/odin-gamepad.c
-@@ -0,0 +1,842 @@
+@@ -0,0 +1,843 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * AYN Odin ADC joysticks and GPIO buttons driver.
@@ -562,8 +562,9 @@ index 000000000..17da8f0b9
 +				if (gamepad->invert_z)
 +					adc->invert = true;
 +
-+				adc->max =  (gamepad->adc_z_range / 2) - 1;
-+				adc->min = -(gamepad->adc_z_range / 2);
++				/* triggers rest at 0, not center */
++				adc->max = gamepad->adc_z_range - 1;
++				adc->min = 0;
 +				break;
 +			case ADC_ABS_RZ:
 +				adc->channel =
@@ -572,8 +573,8 @@ index 000000000..17da8f0b9
 +				if (gamepad->invert_rz)
 +					adc->invert = true;
 +
-+				adc->max =  (gamepad->adc_rz_range / 2) - 1;
-+				adc->min = -(gamepad->adc_rz_range / 2);
++				adc->max = gamepad->adc_rz_range - 1;
++				adc->min = 0;
 +				break;
 +			default:
 +				break;
