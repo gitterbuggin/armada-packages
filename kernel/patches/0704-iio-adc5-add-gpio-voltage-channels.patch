@@ -1,0 +1,38 @@
+From 85c522d89e6339f8d2e3e05534a2ed4226cba9ad Mon Sep 17 00:00:00 2001
+From: Contributor <me@Contributorr.co>
+Date: Tue, 21 Jul 2026 21:06:15 -0500
+Subject: [PATCH] iio: adc: qcom-spmi-adc5: add plain GPIO voltage channels
+
+The AYN Odin's analog sticks are wired to PM8998 GPIO ADC inputs
+(ADC5_GPIO1..5 and ADC5_GPIO6_DIV3). The channel table only defines the
+100k-pullup thermistor variants, so these channels register from zeroed
+table entries: empty info_mask, no in_voltage*_input attribute, and every
+read fails - dead sticks. Add the voltage entries. From the pmOS ayn-odin
+kernel (gitlab.com/jenneron/linux).
+---
+ drivers/iio/adc/qcom-spmi-adc5.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/drivers/iio/adc/qcom-spmi-adc5.c b/drivers/iio/adc/qcom-spmi-adc5.c
+index af3c2f6..5831a15 100644
+--- a/drivers/iio/adc/qcom-spmi-adc5.c
++++ b/drivers/iio/adc/qcom-spmi-adc5.c
+@@ -561,6 +561,18 @@ static const struct adc5_channels adc5_chans_pmic[ADC5_MAX_CHANNEL] = {
+ 					SCALE_HW_CALIB_THERM_100K_PULLUP)
+ 	[ADC5_GPIO4_100K_PU]	= ADC5_CHAN_TEMP("gpio4_100k_pu", 0,
+ 					SCALE_HW_CALIB_THERM_100K_PULLUP)
++	[ADC5_GPIO1]		= ADC5_CHAN_VOLT("gpio1", 0,
++					SCALE_HW_CALIB_DEFAULT)
++	[ADC5_GPIO2]		= ADC5_CHAN_VOLT("gpio2", 0,
++					SCALE_HW_CALIB_DEFAULT)
++	[ADC5_GPIO3]		= ADC5_CHAN_VOLT("gpio3", 0,
++					SCALE_HW_CALIB_DEFAULT)
++	[ADC5_GPIO4]		= ADC5_CHAN_VOLT("gpio4", 0,
++					SCALE_HW_CALIB_DEFAULT)
++	[ADC5_GPIO5]		= ADC5_CHAN_VOLT("gpio5", 0,
++					SCALE_HW_CALIB_DEFAULT)
++	[ADC5_GPIO6_DIV3]	= ADC5_CHAN_VOLT("gpio6", 0,
++					SCALE_HW_CALIB_DEFAULT)
+ };
+ 
+ static const struct adc5_channels adc7_chans_pmic[ADC5_MAX_CHANNEL] = {
