@@ -73,6 +73,7 @@
 					  <&pm8998_adc ADC5_GPIO1>,
 					  <&pm8998_adc ADC5_GPIO4>;
 
+		invert-x;
 		invert-y;
 		invert-ry;
 		invert-z;
