@@ -8,7 +8,7 @@
 # unusably slow.
 
 registry := env("REGISTRY", "localhost/armada-packages")
-packages := "extest inputplumber fex mesa mangohud gamescope networkmanager jupiter-hw-support kernel uboot-odin"
+packages := "extest inputplumber fex mesa mangohud gamescope networkmanager jupiter-hw-support kernel uboot-odin tqftpserv"
 
 import? 'Justfile.local'
 
