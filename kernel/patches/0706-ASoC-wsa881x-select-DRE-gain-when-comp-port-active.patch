@@ -1,0 +1,40 @@
+From: Armada OS <armada@localhost>
+Subject: [PATCH] ASoC: wsa881x: select DRE PA gain when the COMP port is active
+
+The WCD934x companders (COMP7/8) compress the RX signal and stream
+per-sample gain (DRE) data to the WSA881x over the soundwire COMP port,
+where the PA is meant to expand it back.  The driver unconditionally
+forces PA_GAIN_SEL_REG, so with companders enabled (the vendor default
+on the AYN Odin: COMP7/8 + SpkrLeft/Right COMP Switch all on) the amp
+plays the compressed signal at static gain and output is severely
+attenuated.  Select DRE gain when the COMP port is prepared, matching
+the downstream driver's behaviour.
+
+--- a/sound/soc/codecs/wsa881x.c	2026-07-22 09:09:01.780899916 -0500
++++ b/sound/soc/codecs/wsa881x.c	2026-07-22 09:09:11.117284828 -0500
+@@ -929,9 +929,22 @@
+ 		regmap_multi_reg_write(wsa881x->regmap, wsa881x_pre_pmu_pa_2_0,
+ 				       ARRAY_SIZE(wsa881x_pre_pmu_pa_2_0));
+ 
+-		snd_soc_component_update_bits(comp, WSA881X_SPKR_DRV_GAIN,
+-					      WSA881X_PA_GAIN_SEL_MASK,
+-					      WSA881X_PA_GAIN_SEL_REG);
++		/*
++		 * With the COMP port active the codec compander streams
++		 * dynamic gain data to the PA (DRE); the PA must then take
++		 * its gain from that data, not the static gain register,
++		 * or playback is stuck at the compressed level.
++		 */
++		if (wsa881x->port_prepared[WSA881X_PORT_COMP])
++			snd_soc_component_update_bits(comp,
++						      WSA881X_SPKR_DRV_GAIN,
++						      WSA881X_PA_GAIN_SEL_MASK,
++						      WSA881X_PA_GAIN_SEL_DRE);
++		else
++			snd_soc_component_update_bits(comp,
++						      WSA881X_SPKR_DRV_GAIN,
++						      WSA881X_PA_GAIN_SEL_MASK,
++						      WSA881X_PA_GAIN_SEL_REG);
+ 		break;
+ 	case SND_SOC_DAPM_POST_PMU:
+ 		if (wsa881x->port_prepared[WSA881X_PORT_VISENSE]) {
