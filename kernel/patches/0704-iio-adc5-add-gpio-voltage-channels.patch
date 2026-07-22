@@ -1,25 +1,26 @@
-From 85c522d89e6339f8d2e3e05534a2ed4226cba9ad Mon Sep 17 00:00:00 2001
+From 2356262e68c72897f4b4f47bd1bcd66b63777d6d Mon Sep 17 00:00:00 2001
 From: Contributor <me@Contributorr.co>
-Date: Tue, 21 Jul 2026 21:06:15 -0500
-Subject: [PATCH] iio: adc: qcom-spmi-adc5: add plain GPIO voltage channels
+Date: Tue, 21 Jul 2026 21:31:14 -0500
+Subject: [PATCH] iio: adc: qcom-spmi-adc5: add GPIO voltage channels to the
+ rev2 table
 
-The AYN Odin's analog sticks are wired to PM8998 GPIO ADC inputs
-(ADC5_GPIO1..5 and ADC5_GPIO6_DIV3). The channel table only defines the
-100k-pullup thermistor variants, so these channels register from zeroed
-table entries: empty info_mask, no in_voltage*_input attribute, and every
-read fails - dead sticks. Add the voltage entries. From the pmOS ayn-odin
-kernel (gitlab.com/jenneron/linux).
+The AYN Odin's sticks read PM8998 GPIO ADC inputs; PM8998 is
+qcom,spmi-adc-rev2 and uses adc5_chans_rev2, which lacks the plain GPIO
+voltage entries - the channels register from zeroed table slots with an
+empty info_mask (label attr only, no in_voltage*_input) and every read
+fails. Add ADC5_GPIO1..5 + ADC5_GPIO6_DIV3 voltage entries, matching the
+pmOS ayn-odin kernel.
 ---
  drivers/iio/adc/qcom-spmi-adc5.c | 12 ++++++++++++
  1 file changed, 12 insertions(+)
 
 diff --git a/drivers/iio/adc/qcom-spmi-adc5.c b/drivers/iio/adc/qcom-spmi-adc5.c
-index af3c2f6..5831a15 100644
+index af3c2f6..4a4e368 100644
 --- a/drivers/iio/adc/qcom-spmi-adc5.c
 +++ b/drivers/iio/adc/qcom-spmi-adc5.c
-@@ -561,6 +561,18 @@ static const struct adc5_channels adc5_chans_pmic[ADC5_MAX_CHANNEL] = {
+@@ -623,6 +623,18 @@ static const struct adc5_channels adc5_chans_rev2[ADC5_MAX_CHANNEL] = {
  					SCALE_HW_CALIB_THERM_100K_PULLUP)
- 	[ADC5_GPIO4_100K_PU]	= ADC5_CHAN_TEMP("gpio4_100k_pu", 0,
+ 	[ADC5_XO_THERM_100K_PU]	= ADC5_CHAN_TEMP("xo_therm_100k_pu", 0,
  					SCALE_HW_CALIB_THERM_100K_PULLUP)
 +	[ADC5_GPIO1]		= ADC5_CHAN_VOLT("gpio1", 0,
 +					SCALE_HW_CALIB_DEFAULT)
@@ -35,4 +36,4 @@ index af3c2f6..5831a15 100644
 +					SCALE_HW_CALIB_DEFAULT)
  };
  
- static const struct adc5_channels adc7_chans_pmic[ADC5_MAX_CHANNEL] = {
+ static int adc5_get_fw_channel_data(struct adc5_chip *adc,
