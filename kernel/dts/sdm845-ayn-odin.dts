@@ -66,12 +66,17 @@
 		io-channel-names = "abs_x", "abs_y",
 				 "abs_rx", "abs_ry",
 				 "abs_z", "abs_rz";
-		io-channels = <&pm8998_adc ADC5_GPIO2>,
-					  <&pm8998_adc ADC5_GPIO3>,
+		io-channels = <&pm8998_adc ADC5_GPIO3>,
+					  <&pm8998_adc ADC5_GPIO2>,
 					  <&pm8998_adc ADC5_GPIO5>,
 					  <&pm8998_adc ADC5_GPIO6_DIV3>,
 					  <&pm8998_adc ADC5_GPIO1>,
 					  <&pm8998_adc ADC5_GPIO4>;
+
+		invert-y;
+		invert-ry;
+		invert-z;
+		invert-rz;
 
 		poll-interval = <10>;
 
