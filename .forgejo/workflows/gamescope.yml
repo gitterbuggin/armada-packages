@@ -1,0 +1,12 @@
+name: gamescope
+on:
+  push:
+    branches: [main, sdm845-odin]
+    paths: ['gamescope/**', 'oci/**', 'scripts/**', 'toolchain.env', '.forgejo/workflows/gamescope.yml', '.forgejo/workflows/_package-image.yml']
+  workflow_dispatch:
+jobs:
+  build:
+    uses: ./.forgejo/workflows/_package-image.yml
+    secrets: inherit
+    with:
+      package: gamescope

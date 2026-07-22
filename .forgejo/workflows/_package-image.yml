@@ -1,0 +1,82 @@
+name: package-image
+
+# Reusable: build one package, wrap its artifacts in a scratch image, and push
+# to the Forgejo container registry as
+#   forgejo.example.invalid/<owner>/armada-packages-<package>:{<date>-<sha>,latest}
+#
+# Forgejo port of .github/workflows/_package-image.yml. Differences:
+#   - pushes to the LAN Forgejo registry (plain http, hence --tls-verify=false)
+#   - no cosign signing (private trusted registry)
+#   - sdm845-odin branch builds use Cortex-A75 tuning (the Odin's A75/A55
+#     cores lack the dotprod/i8mm the default A78 flags assume)
+on:
+  workflow_call:
+    inputs:
+      package:
+        description: "Package directory / image name suffix"
+        required: true
+        type: string
+    outputs:
+      digest:
+        description: "The pushed image digest (pin this in armada's Containerfile)"
+        value: ${{ jobs.build.outputs.digest }}
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    concurrency:
+      group: ${{ inputs.package }}-image
+      cancel-in-progress: true
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
+    env:
+      REGISTRY: forgejo.example.invalid
+      IMAGE: forgejo.example.invalid/${{ github.repository_owner }}/armada-packages-${{ inputs.package }}
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tooling
+        run: |
+          sudo apt-get update -y && sudo apt-get install -y podman buildah ccache
+          mkdir -p "${CCACHE_DIR}"
+
+      # Opt-in lives in each build.sh: only those that wire up ccache populate
+      # this per-package dir.
+      - name: ccache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-${{ inputs.package }}-${{ runner.arch }}-${{ hashFiles('toolchain.env') }}-${{ hashFiles(format('{0}/**', inputs.package)) }}
+          restore-keys: |
+            ccache-${{ inputs.package }}-${{ runner.arch }}-${{ hashFiles('toolchain.env') }}-
+
+      - name: Build artifacts
+        run: |
+          if [ "${GITHUB_REF_NAME}" = "sdm845-odin" ]; then
+            export ARMADA_MARCH="-march=armv8.2-a+fp16 -mtune=cortex-a75"
+          fi
+          cd ${{ inputs.package }} && ./build.sh
+
+      - name: Stage image context
+        run: |
+          bash scripts/stage.sh ${{ inputs.package }}
+          echo "Staged for ${IMAGE}:" && find ctx -type f
+
+      - name: Build + push
+        id: push
+        run: |
+          TAG="$(date -u +%Y%m%d)-${GITHUB_SHA::8}"
+          buildah build -f oci/Containerfile -t "${IMAGE}:${TAG}" .
+          buildah tag "${IMAGE}:${TAG}" "${IMAGE}:latest"
+          echo "${{ secrets.REPO_TOKEN || github.token }}" | buildah login --tls-verify=false -u "${{ github.actor }}" --password-stdin "${REGISTRY}"
+          buildah push --tls-verify=false "${IMAGE}:${TAG}"
+          buildah push --tls-verify=false --digestfile /tmp/digest "${IMAGE}:latest"
+          DIGEST="$(cat /tmp/digest)"
+          echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
+          {
+            echo "### \`${{ inputs.package }}\` published"
+            echo '```'
+            echo "${IMAGE}@${DIGEST}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

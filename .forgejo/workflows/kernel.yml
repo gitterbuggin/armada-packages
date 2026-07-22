@@ -1,0 +1,12 @@
+name: kernel
+on:
+  push:
+    branches: [main, sdm845-odin]
+    paths: ['kernel/**', 'oci/**', 'scripts/**', 'toolchain.env', '.forgejo/workflows/kernel.yml', '.forgejo/workflows/_package-image.yml']
+  workflow_dispatch:
+jobs:
+  build:
+    uses: ./.forgejo/workflows/_package-image.yml
+    secrets: inherit
+    with:
+      package: kernel

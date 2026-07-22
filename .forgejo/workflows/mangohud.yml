@@ -1,0 +1,12 @@
+name: mangohud
+on:
+  push:
+    branches: [main, sdm845-odin]
+    paths: ['mangohud/**', 'oci/**', 'scripts/**', 'toolchain.env', '.forgejo/workflows/mangohud.yml', '.forgejo/workflows/_package-image.yml']
+  workflow_dispatch:
+jobs:
+  build:
+    uses: ./.forgejo/workflows/_package-image.yml
+    secrets: inherit
+    with:
+      package: mangohud

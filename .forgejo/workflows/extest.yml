@@ -1,0 +1,12 @@
+name: extest
+on:
+  push:
+    branches: [main, sdm845-odin]
+    paths: ['extest/**', 'oci/**', 'scripts/**', 'toolchain.env', '.forgejo/workflows/extest.yml', '.forgejo/workflows/_package-image.yml']
+  workflow_dispatch:
+jobs:
+  build:
+    uses: ./.forgejo/workflows/_package-image.yml
+    secrets: inherit
+    with:
+      package: extest
