@@ -1,0 +1,32 @@
+From 7313e3a384ed616196cee8972c427c2b996c00de Mon Sep 17 00:00:00 2001
+From: Contributor <me@Contributorr.co>
+Date: Wed, 22 Jul 2026 08:36:35 -0500
+Subject: [PATCH] slimbus: qcom-ngd-ctrl: restore 1s runtime autosuspend delay
+
+Upstream reduced the NGD autosuspend delay from MSEC_PER_SEC to 100ms.
+On the AYN Odin (sdm845) that makes the controller bounce through
+power-up + QMI reconfiguration continuously ('SLIM SAT: Rcvd master
+capability' spam, 'QMI wait timeout', EIO on wcd934x/wsa881x register
+access via the slim regmap). The pmOS 6.7 kernel with the 1s delay is
+stable on the same hardware.
+---
+ drivers/slimbus/qcom-ngd-ctrl.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/slimbus/qcom-ngd-ctrl.c b/drivers/slimbus/qcom-ngd-ctrl.c
+index 1ed6be6..1570d5e 100644
+--- a/drivers/slimbus/qcom-ngd-ctrl.c
++++ b/drivers/slimbus/qcom-ngd-ctrl.c
+@@ -1570,7 +1570,11 @@ static int qcom_slim_ngd_probe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, ctrl);
+ 	pm_runtime_use_autosuspend(dev);
+-	pm_runtime_set_autosuspend_delay(dev, 100);
++	/* 100ms makes the NGD flap (repeated power-up + QMI reconfiguration:
++	 * 'Rcvd master capability' spam, QMI wait timeouts, EIO on codec/amp
++	 * register access through the slim regmap). Use the 1s delay the
++	 * pre-7.0 driver shipped, verified stable on the AYN Odin. */
++	pm_runtime_set_autosuspend_delay(dev, MSEC_PER_SEC);
+ 	pm_runtime_set_suspended(dev);
+ 	pm_runtime_enable(dev);
+ 	pm_runtime_get_noresume(dev);
