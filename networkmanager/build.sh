@@ -17,7 +17,7 @@ SUBPKGS="NetworkManager NetworkManager-libnm NetworkManager-wifi NetworkManager-
 mkdir -p out; rm -f out/*
 podman run --rm \
     -e SRPM="${SRPM}" -e NM_VER="${NM_VER}" -e NM_REL="${NM_REL}" -e DIST="${DIST}" -e SUBPKGS="${SUBPKGS}" \
-    -v "${REPO}:/work:Z" -w /work --platform linux/aarch64 \
+    -v "${REPO}:/work:Z" -w /work --platform linux/arm64 \
     "${BUILDER_IMAGE}" bash -euxc '
     export HOME=/tmp
     dnf -y install rpm-build rpmdevtools koji "dnf-command(builddep)" git-core

@@ -5,7 +5,7 @@ source ./BASE.env
 source ../toolchain.env
 
 mkdir -p out; rm -f out/*
-podman run --rm -v "${REPO}:/work:Z" -w /work --platform linux/aarch64 "${BUILDER_IMAGE}" bash -euxc '
+podman run --rm -v "${REPO}:/work:Z" -w /work --platform linux/arm64 "${BUILDER_IMAGE}" bash -euxc '
     dnf -y install git cargo rust gcc
     git clone https://github.com/Supreeeme/extest /tmp/extest
     git -C /tmp/extest checkout '"${COMMIT}"'

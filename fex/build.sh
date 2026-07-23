@@ -8,7 +8,7 @@ source ../toolchain.env
 SYSROOT_TARBALL="fex-sysroot-${SYSROOT_VERSION}.tar.gz"
 
 if [ ! -f "${SYSROOT_TARBALL}" ]; then
-    podman run --rm "${ARMADA_PODMAN_SECOPTS[@]}" -v "${REPO}:/work:Z" -w /work --platform linux/aarch64 "${BUILDER_IMAGE}" bash -euxc '
+    podman run --rm "${ARMADA_PODMAN_SECOPTS[@]}" -v "${REPO}:/work:Z" -w /work --platform linux/arm64 "${BUILDER_IMAGE}" bash -euxc '
         dnf -y install dnf-plugins-core rpmdevtools
         bash build-fex-sysroot.sh 44
         mv fex-sysroot-fc44-*.tar.gz '"${SYSROOT_TARBALL}"'
@@ -18,7 +18,7 @@ fi
 mkdir -p out; rm -f out/*
 podman run --rm "${ARMADA_PODMAN_SECOPTS[@]}" \
     -e COMMIT="${COMMIT}" -e DATE="${DATE}" -e BASE_VERSION="${BASE_VERSION}" -e ARMADA_MARCH="${ARMADA_MARCH}" \
-    -v "${REPO}:/work:Z" -w /work --platform linux/aarch64 "${BUILDER_IMAGE}" bash -euxc '
+    -v "${REPO}:/work:Z" -w /work --platform linux/arm64 "${BUILDER_IMAGE}" bash -euxc '
         dnf -y install --skip-unavailable rpm-build rpmdevtools \
             dnf-plugins-core spectool cmake clang lld llvm ninja-build \
             python3 python3-setuptools systemd-rpm-macros catch-devel \

@@ -14,7 +14,7 @@ mkdir -p out; rm -f out/*
 podman run --rm \
     -e REPO_URL="${REPO_URL}" -e COMMIT="${COMMIT}" \
     -v "${REPO}:/work:Z" -w /work \
-    --platform linux/aarch64 \
+    --platform linux/arm64 \
     "${BUILDER_IMAGE}" bash -euxc '
         dnf -y install gcc git-core qrtr-devel
         SRC=/tmp/tqftpserv-src
