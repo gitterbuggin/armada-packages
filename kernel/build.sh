@@ -25,7 +25,7 @@ podman run --rm \
     -e KERNEL_VERSION="${VERSION}" \
     -v "${REPO}:/work:Z" -w /work \
     -v "${CCACHE_DIR}:/ccache:Z" \
-    -e CCACHE_DIR=/ccache -e CCACHE_MAXSIZE=4G \
+    -e CCACHE_DIR=/ccache -e CCACHE_MAXSIZE=2G \
     --platform "${PLATFORM}" \
     "${BUILDER_IMAGE}" bash -euxc '
         dnf -y install '"${TOOLCHAIN_PKGS}"' make bc bison flex openssl-devel \

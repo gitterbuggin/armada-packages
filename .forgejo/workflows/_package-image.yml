@@ -38,8 +38,12 @@ jobs:
 
       - name: Tooling
         run: |
-          sudo apt-get update -y && sudo apt-get install -y podman buildah ccache
+          sudo apt-get update -y && sudo apt-get install -y podman buildah ccache fuse-overlayfs
           mkdir -p "${CCACHE_DIR}"
+          # vfs means fuse-overlayfs couldn't engage (no /dev/fuse in the job
+          # container) and disk use will balloon to several times the image size.
+          df -h /
+          podman info --format '{{.Store.GraphDriverName}}'
 
       # Opt-in lives in each build.sh: only those that wire up ccache populate
       # this per-package dir.
