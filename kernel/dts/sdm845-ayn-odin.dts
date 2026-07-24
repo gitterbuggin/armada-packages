@@ -104,16 +104,20 @@
 			linux,code = <BTN_SOUTH>;
 		};
 
+		/* Positional codes (driver + inputplumber capability map convention):
+		 * gpio 41 is the top (north) button — labeled X on the Odin;
+		 * gpio 92 is the left (west) button — labeled Y. Verified via evtest.
+		 */
 		btn_gpio03 {
 			gpios = <&tlmm 41 GPIO_ACTIVE_LOW>;
 			label = "btn_gpio03";
-			linux,code = <BTN_WEST>;
+			linux,code = <BTN_NORTH>;
 		};
 
 		btn_gpio04 {
 			gpios = <&tlmm 92 GPIO_ACTIVE_LOW>;
 			label = "btn_gpio04";
-			linux,code = <BTN_NORTH>;
+			linux,code = <BTN_WEST>;
 		};
 
 		btn_gpio05 {
