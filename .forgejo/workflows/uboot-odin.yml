@@ -1,0 +1,54 @@
+name: uboot-odin
+# Build ABL-bootable U-Boot images for the AYN Odin / Odin Pro / Odin M2 and
+# publish them to the Forgejo generic package registry so they are directly
+# downloadable:
+#   http://forgejo.example.invalid/api/packages/<owner>/generic/uboot-odin/latest/uboot-ayn-odin.img
+#   http://forgejo.example.invalid/api/packages/<owner>/generic/uboot-odin/latest/uboot-ayn-odin-m2.img
+# plus an immutable <date>-<sha> version alongside the rolling "latest".
+on:
+  push:
+    branches: [main, sdm845-odin]
+    paths: ['uboot-odin/**', 'toolchain.env', '.forgejo/workflows/uboot-odin.yml']
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    concurrency:
+      group: uboot-odin
+      cancel-in-progress: true
+    env:
+      PKG_API: http://forgejo.example.invalid/api/packages/${{ github.repository_owner }}/generic/uboot-odin
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tooling
+        run: |
+          sudo apt-get update -y && sudo apt-get install -y podman fuse-overlayfs
+          df -h /
+          podman info --format '{{.Store.GraphDriverName}}'
+
+      - name: Build U-Boot images
+        run: cd uboot-odin && ./build.sh
+
+      - name: Publish to generic package registry
+        run: |
+          set -euxo pipefail
+          CREDS="${{ github.actor }}:${{ secrets.REPO_TOKEN || github.token }}"
+          TAG="$(date -u +%Y%m%d)-${GITHUB_SHA::8}"
+          # "latest" is a rolling version: the generic registry rejects
+          # duplicate uploads, so drop the old one first.
+          curl -sf -X DELETE -u "${CREDS}" "${PKG_API}/latest" || true
+          for f in uboot-ayn-odin.img uboot-ayn-odin-m2.img SHA256SUMS VERSION; do
+            curl -sf -u "${CREDS}" --upload-file "uboot-odin/out/${f}" "${PKG_API}/${TAG}/${f}"
+            curl -sf -u "${CREDS}" --upload-file "uboot-odin/out/${f}" "${PKG_API}/latest/${f}"
+          done
+          {
+            echo "### uboot-odin published"
+            echo '```'
+            for f in uboot-ayn-odin.img uboot-ayn-odin-m2.img SHA256SUMS; do
+              echo "${PKG_API}/${TAG}/${f}"
+            done
+            echo '```'
+            echo "also available under version \`latest\`"
+          } >> "$GITHUB_STEP_SUMMARY"
