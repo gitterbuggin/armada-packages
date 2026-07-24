@@ -49,7 +49,7 @@ new file mode 100644
 index 000000000..17da8f0b9
 --- /dev/null
 +++ b/drivers/input/joystick/odin-gamepad.c
-@@ -0,0 +1,843 @@
+@@ -0,0 +1,847 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * AYN Odin ADC joysticks and GPIO buttons driver.
@@ -391,6 +391,16 @@ index 000000000..17da8f0b9
 +
 +static struct attribute_group gamepad_attr_group = {
 +	.attrs = gamepad_attrs,
++};
++
++/* Managed by the driver core via .dev_groups: created after a successful
++ * probe and removed on unbind. Creating this group by hand in probe leaked
++ * it on the platform device across unbind, so a module reload failed with
++ * EEXIST on the duplicate sysfs entries and the gamepad never came back.
++ */
++static const struct attribute_group *gamepad_attr_groups[] = {
++	&gamepad_attr_group,
++	NULL,
 +};
 +
 +static void gamepad_get(struct input_dev *input)
@@ -845,13 +855,6 @@ index 000000000..17da8f0b9
 +	mutex_init(&gamepad->lock);
 +	platform_set_drvdata(pdev, gamepad);
 +
-+	error = sysfs_create_group(&pdev->dev.kobj, &gamepad_attr_group);
-+	if (error) {
-+		dev_err(dev, "create sysfs group fail, error: %d\n",
-+			error);
-+		return error;
-+	}
-+
 +	error = gamepad_input_setup(dev, gamepad);
 +	if (error) {
 +		dev_err(dev, "input setup failed!(err = %d)\n", error);
@@ -873,6 +876,7 @@ index 000000000..17da8f0b9
 +	.driver = {
 +		.name = DRIVER_NAME,
 +		.of_match_table = of_match_ptr(gamepad_of_match),
++		.dev_groups = gamepad_attr_groups,
 +	},
 +};
 +
