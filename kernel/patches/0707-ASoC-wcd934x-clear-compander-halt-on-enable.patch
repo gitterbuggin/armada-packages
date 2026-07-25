@@ -19,16 +19,7 @@ whose disable path ends by clearing HALT.
 
 --- a/sound/soc/codecs/wcd934x.c
 +++ b/sound/soc/codecs/wcd934x.c
-@@ -4218,16 +4218,19 @@
- 	switch (event) {
- 	case SND_SOC_DAPM_PRE_PMU:
- 		/* Enable Compander Clock */
- 		snd_soc_component_update_bits(comp, comp_ctl0_reg,
- 					      WCD934X_COMP_CLK_EN_MASK,
- 					      WCD934X_COMP_CLK_ENABLE);
- 		snd_soc_component_update_bits(comp, comp_ctl0_reg,
- 					      WCD934X_COMP_SOFT_RST_MASK,
- 					      WCD934X_COMP_SOFT_RST_ENABLE);
+@@ -4228,6 +4228,9 @@
  		snd_soc_component_update_bits(comp, comp_ctl0_reg,
  					      WCD934X_COMP_SOFT_RST_MASK,
  					      WCD934X_COMP_SOFT_RST_DISABLE);
@@ -38,9 +29,7 @@ whose disable path ends by clearing HALT.
  		snd_soc_component_update_bits(comp, rx_path_cfg0_reg,
  					      WCD934X_HPH_CMP_EN_MASK,
  					      WCD934X_HPH_CMP_ENABLE);
- 		break;
-@@ -4249,7 +4252,9 @@
- 		snd_soc_component_update_bits(comp, comp_ctl0_reg,
+@@ -4249,6 +4252,8 @@
  					      WCD934X_COMP_CLK_EN_MASK, 0x0);
  		snd_soc_component_update_bits(comp, comp_ctl0_reg,
  					      WCD934X_COMP_SOFT_RST_MASK, 0x0);
@@ -48,4 +37,4 @@ whose disable path ends by clearing HALT.
 +					      WCD934X_COMP_HALT_MASK, 0x0);
  		break;
  	}
-
+ 
