@@ -1,0 +1,51 @@
+From: Armada OS <armada@localhost>
+Subject: [PATCH] ASoC: wcd934x: clear the compander HALT bit on enable/disable
+
+wcd934x_config_compander() sets WCD934X_COMP_HALT in the POST_PMD path
+but nothing ever clears it: the PRE_PMU path only enables the clock and
+toggles soft reset.  After the first power-down of an interpolator with
+its compander enabled, every subsequent power-up runs the compander
+clocked but halted (COMPANDERn_CTL0 reads 0x65) — it stops producing
+gain data, so speakers behind a DRE-mode WSA881x play at the gain-word
+floor and output is severely attenuated.
+
+Any early PCM open/close cycle (PipeWire opening the card at boot before
+UCM applies the routing) latches this state, making quiet speakers the
+default on every boot.
+
+Clear HALT after the soft-reset toggle on enable, and drop it again at
+the end of the disable sequence to match the downstream (tavil) driver,
+whose disable path ends by clearing HALT.
+
+--- a/sound/soc/codecs/wcd934x.c
++++ b/sound/soc/codecs/wcd934x.c
+@@ -4218,16 +4218,19 @@
+ 	switch (event) {
+ 	case SND_SOC_DAPM_PRE_PMU:
+ 		/* Enable Compander Clock */
+ 		snd_soc_component_update_bits(comp, comp_ctl0_reg,
+ 					      WCD934X_COMP_CLK_EN_MASK,
+ 					      WCD934X_COMP_CLK_ENABLE);
+ 		snd_soc_component_update_bits(comp, comp_ctl0_reg,
+ 					      WCD934X_COMP_SOFT_RST_MASK,
+ 					      WCD934X_COMP_SOFT_RST_ENABLE);
+ 		snd_soc_component_update_bits(comp, comp_ctl0_reg,
+ 					      WCD934X_COMP_SOFT_RST_MASK,
+ 					      WCD934X_COMP_SOFT_RST_DISABLE);
++		/* A previous disable leaves the compander halted */
++		snd_soc_component_update_bits(comp, comp_ctl0_reg,
++					      WCD934X_COMP_HALT_MASK, 0x0);
+ 		snd_soc_component_update_bits(comp, rx_path_cfg0_reg,
+ 					      WCD934X_HPH_CMP_EN_MASK,
+ 					      WCD934X_HPH_CMP_ENABLE);
+ 		break;
+@@ -4249,7 +4252,9 @@
+ 		snd_soc_component_update_bits(comp, comp_ctl0_reg,
+ 					      WCD934X_COMP_CLK_EN_MASK, 0x0);
+ 		snd_soc_component_update_bits(comp, comp_ctl0_reg,
+ 					      WCD934X_COMP_SOFT_RST_MASK, 0x0);
++		snd_soc_component_update_bits(comp, comp_ctl0_reg,
++					      WCD934X_COMP_HALT_MASK, 0x0);
+ 		break;
+ 	}
+
