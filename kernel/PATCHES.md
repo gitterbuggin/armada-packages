@@ -159,6 +159,7 @@ to a commit, or `armada` if it's original; a URL source with no `notes` is verba
   notes: modified — rebased to apply after the SM8550 panels
 - `patches/0016-rp5-smooth-brightness-adjustment.patch`
   source: https://github.com/ROCKNIX/distribution/blob/e485495a942daba186d4a8543e18a1ad09c9a5d5/projects/ROCKNIX/devices/SM8250/patches/linux/0016-rp5-smooth-brightness-adjustment.patch
+  notes: modified — gated to SM8250
 - `patches/0004-pm8150b.patch`
   source: https://github.com/ROCKNIX/distribution/blob/e485495a942daba186d4a8543e18a1ad09c9a5d5/projects/ROCKNIX/devices/SM8250/patches/linux/0004-pm8150b.patch
 - `patches/0009-qcom-spmi-haptics.patch`
@@ -175,6 +176,7 @@ to a commit, or `armada` if it's original; a URL source with no `notes` is verba
   source: https://github.com/ROCKNIX/distribution/blob/e485495a942daba186d4a8543e18a1ad09c9a5d5/projects/ROCKNIX/devices/SM8250/patches/linux/9998-gpu-opp-table.patch
 - `patches/0001-msm-dsi-restore-wide_bus-bpp-calculation.patch`
   source: https://github.com/ROCKNIX/distribution/blob/e485495a942daba186d4a8543e18a1ad09c9a5d5/projects/ROCKNIX/devices/SM8250/patches/linux/0001-msm-dsi-restore-wide_bus-bpp-calculation.patch
+  notes: modified — gated to SM8250
 - `patches/0012-ASoC-qcom-q6asm-dai-Change-some-default-periods.patch`
   source: https://github.com/ROCKNIX/distribution/blob/e485495a942daba186d4a8543e18a1ad09c9a5d5/projects/ROCKNIX/devices/SM8250/patches/linux/0012-ASoC-qcom-q6asm-dai-Change-some-default-periods.patch
 - `patches/0062_wsa881x-shared-powerdown-gpio.patch`
@@ -183,10 +185,12 @@ to a commit, or `armada` if it's original; a URL source with no `notes` is verba
   source: https://github.com/ROCKNIX/distribution/blob/e485495a942daba186d4a8543e18a1ad09c9a5d5/projects/ROCKNIX/devices/SM8250/patches/linux/0100-revert-force-16bit-audio.patch
 - `patches/0300-batocera-fix-headphone-jack-detection.patch`
   source: https://github.com/ROCKNIX/distribution/blob/e485495a942daba186d4a8543e18a1ad09c9a5d5/projects/ROCKNIX/devices/SM8250/patches/linux/0300-batocera-fix-headphone-jack-detection.patch
+  notes: modified — gated to SM8250
 - `patches/0102-arm64-dts-qcom-pm8150-Add-nvmem-support-for-PM8150-R.patch`
   source: https://github.com/ROCKNIX/distribution/blob/e485495a942daba186d4a8543e18a1ad09c9a5d5/projects/ROCKNIX/devices/SM8250/patches/linux/0102-arm64-dts-qcom-pm8150-Add-nvmem-support-for-PM8150-R.patch
-- `patches/9999-remove-log-spam.patch`
+- `patches/9999-sm8250-disable-coresight-stm.patch`
   source: https://github.com/ROCKNIX/distribution/blob/e485495a942daba186d4a8543e18a1ad09c9a5d5/projects/ROCKNIX/devices/SM8250/patches/linux/9999-remove-log-spam.patch
+  notes: modified — retained only the SM8250 CoreSight STM disable
 - `patches/sm8750-gpucc-clock-controller.patch`
   source: https://github.com/ROCKNIX/distribution/blob/e485495a942daba186d4a8543e18a1ad09c9a5d5/projects/ROCKNIX/devices/SM8750/patches/linux/0000_to_0025-linux-7-0_qcom-adreno_waiting-for-upstream.patch
   notes: modified — extracted (gpucc slice) from the ROCKNIX adreno bundle
