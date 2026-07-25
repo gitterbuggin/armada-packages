@@ -1,11 +1,24 @@
-#!/bin/bash
+#!/usr/bin/bash
+
 set -euxo pipefail
-cd "$(dirname "$0")"; REPO=$PWD
+
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
+PACKAGE_DIR="${PWD}"
+
 source ./BASE.env
 source ../toolchain.env
 
-mkdir -p out; rm -f out/*
-podman run --rm -e VERSION="${VERSION}" -e ARMADA_MARCH="${ARMADA_MARCH}" -v "${REPO}:/work:Z" -w /work --platform linux/aarch64 "${BUILDER_IMAGE}" bash -euxc '
+rm -rf out
+mkdir -p out
+
+podman run --rm \
+  --volume "${PACKAGE_DIR}:/work:Z" \
+  --workdir /work \
+  --platform linux/aarch64 \
+  --env VERSION="${VERSION}" \
+  --env ARMADA_MARCH="${ARMADA_MARCH}" \
+  "${BUILDER_IMAGE}" \
+  bash -euxo pipefail -c '
     export HOME=/tmp
     dnf -y install rpm-build rpmdevtools spectool "dnf-command(builddep)"
     rpmdev-setuptree
@@ -26,3 +39,5 @@ EOF
     rpmbuild -bb ~/rpmbuild/SPECS/mangohud.spec
     cp ~/rpmbuild/RPMS/*/mangohud-[0-9]*.armada.*.rpm /work/out/
 '
+
+echo "built: ${PACKAGE_DIR}/out"

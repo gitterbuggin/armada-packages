@@ -1,11 +1,23 @@
-#!/bin/bash
+#!/usr/bin/bash
+
 set -euxo pipefail
-cd "$(dirname "$0")"; REPO=$PWD
+
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
+PACKAGE_DIR="${PWD}"
+
 source ./BASE.env
 source ../toolchain.env
 
-mkdir -p out; rm -f out/*
-podman run --rm -e VERSION="${VERSION}" -e ARMADA_MARCH="${ARMADA_MARCH}" -v "${REPO}:/work:Z" -w /work --platform linux/aarch64 "${BUILDER_IMAGE}" bash -euxc '
+rm -rf out
+mkdir -p out
+podman run --rm \
+  --volume "${PACKAGE_DIR}:/work:Z" \
+  --workdir /work \
+  --platform linux/aarch64 \
+  --env VERSION="${VERSION}" \
+  --env ARMADA_MARCH="${ARMADA_MARCH}" \
+  "${BUILDER_IMAGE}" \
+  bash -euxo pipefail -c '
     dnf -y install --skip-unavailable \
         rpm-build rpmdevtools dnf-plugins-core spectool catch-devel \
         cmake gcc gcc-c++ git-core meson ninja-build \
@@ -35,3 +47,5 @@ EOF
     rpmbuild -bb ~/rpmbuild/SPECS/gamescope.spec
     cp ~/rpmbuild/RPMS/aarch64/*.rpm /work/out/
 '
+
+echo "built: ${PACKAGE_DIR}/out"

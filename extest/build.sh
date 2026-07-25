@@ -1,11 +1,22 @@
-#!/bin/bash
+#!/usr/bin/bash
+
 set -euxo pipefail
-cd "$(dirname "$0")"; REPO=$PWD
+
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
+PACKAGE_DIR="${PWD}"
+
 source ./BASE.env
 source ../toolchain.env
 
-mkdir -p out; rm -f out/*
-podman run --rm -v "${REPO}:/work:Z" -w /work --platform linux/aarch64 "${BUILDER_IMAGE}" bash -euxc '
+rm -rf out
+mkdir -p out
+
+podman run --rm \
+  --volume "${PACKAGE_DIR}:/work:Z" \
+  --workdir /work \
+  --platform linux/aarch64 \
+  "${BUILDER_IMAGE}" \
+  bash -euxo pipefail -c '
     dnf -y install git cargo rust gcc
     git clone https://github.com/Supreeeme/extest /tmp/extest
     git -C /tmp/extest checkout '"${COMMIT}"'
@@ -14,3 +25,5 @@ podman run --rm -v "${REPO}:/work:Z" -w /work --platform linux/aarch64 "${BUILDE
     ( cd /tmp/extest && cargo build --release )
     cp /tmp/extest/target/release/libextest.so /work/out/
 '
+
+echo "built: ${PACKAGE_DIR}/out"

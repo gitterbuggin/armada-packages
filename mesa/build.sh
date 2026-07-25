@@ -1,25 +1,37 @@
-#!/bin/bash
+#!/usr/bin/bash
+
 set -euxo pipefail
-cd "$(dirname "$0")"; REPO=$PWD
+
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
+PACKAGE_DIR="${PWD}"
 
 source ./BASE.env
 source ../toolchain.env
+
 SRPM_NVR="$SRPM"
-MESA_VER="${SRPM_NVR#mesa-}"; MESA_VER="${MESA_VER%%-*}"
+MESA_VER="${SRPM_NVR#mesa-}"
+MESA_VER="${MESA_VER%%-*}"
+
 # Rawhide SRPM (BASE.env pins the fcNN) rebuilt on fedora:44 for the runtime ABI.
 DIST=".fc44.armada"
 SUBPKGS="mesa-filesystem mesa-libgbm mesa-dri-drivers mesa-vulkan-drivers mesa-libGL mesa-libEGL"
 
 # ccache: CI persists CCACHE_DIR; default to a repo-local dir for dev builds
-CCACHE_DIR="${CCACHE_DIR:-${REPO}/.ccache}"; mkdir -p "${CCACHE_DIR}"
+CCACHE_DIR="${CCACHE_DIR:-${PACKAGE_DIR}/.ccache}"
+mkdir -p "${CCACHE_DIR}"
 
-mkdir -p out; rm -f out/*
+rm -rf out
+mkdir -p out
+
 podman run --rm \
-    -v "${REPO}:/work:Z" -w /work \
-    -v "${CCACHE_DIR}:/ccache:Z" \
-    -e CCACHE_DIR=/ccache -e CCACHE_MAXSIZE=2G \
-    --platform linux/aarch64 \
-    "${BUILDER_IMAGE}" bash -euxc "
+  --volume "${PACKAGE_DIR}:/work:Z" \
+  --volume "${CCACHE_DIR}:/ccache:Z" \
+  --workdir /work \
+  --platform linux/aarch64 \
+  --env CCACHE_DIR=/ccache \
+  --env CCACHE_MAXSIZE=2G \
+  "${BUILDER_IMAGE}" \
+  bash -euxo pipefail -c "
         export HOME=/tmp
         dnf -y install rpm-build rpmdevtools koji 'dnf-command(builddep)' ccache
         export PATH=/usr/lib64/ccache:\$PATH CC=gcc CXX=g++
@@ -61,3 +73,5 @@ EOF
             cp \$HOME/rpmbuild/RPMS/*/\${p}-${MESA_VER}-*${DIST}.*.rpm /work/out/
         done
     "
+
+echo "built: ${PACKAGE_DIR}/out"

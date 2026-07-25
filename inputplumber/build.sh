@@ -1,11 +1,24 @@
-#!/bin/bash
+#!/usr/bin/bash
+
 set -euxo pipefail
-cd "$(dirname "$0")"; REPO=$PWD
+
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
+PACKAGE_DIR="${PWD}"
+
 source ./BASE.env
 source ../toolchain.env
 
-mkdir -p out; rm -f out/*
-podman run --rm -e COMMIT="${COMMIT}" -e VERSION="${VERSION}" -v "${REPO}:/work:Z" -w /work --platform linux/aarch64 "${BUILDER_IMAGE}" bash -euxc '
+rm -rf out
+mkdir -p out
+
+podman run --rm \
+  --volume "${PACKAGE_DIR}:/work:Z" \
+  --workdir /work \
+  --platform linux/aarch64 \
+  --env COMMIT="${COMMIT}" \
+  --env VERSION="${VERSION}" \
+  "${BUILDER_IMAGE}" \
+  bash -euxo pipefail -c '
     export HOME=/tmp
     dnf -y install rpm-build rpmdevtools spectool "dnf-command(builddep)" git-core
     rpmdev-setuptree
@@ -22,3 +35,5 @@ EOF
     rpmbuild -bb --define "commit ${COMMIT}" ~/rpmbuild/SPECS/inputplumber.spec
     cp ~/rpmbuild/RPMS/*/inputplumber-[0-9]*.armada.*.rpm /work/out/
 '
+
+echo "built: ${PACKAGE_DIR}/out"
