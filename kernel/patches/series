@@ -116,3 +116,4 @@ sm8750-adreno-a830-gpu-driver.patch
 0705-slimbus-ngd-restore-1s-autosuspend.patch
 0706-ASoC-wsa881x-select-DRE-gain-when-comp-port-active.patch
 0707-ASoC-wcd934x-clear-compander-halt-on-enable.patch
+0708-drm-panel-td4328-drive-enable-gpio.patch   # TDDI touch power; needs 0701 first

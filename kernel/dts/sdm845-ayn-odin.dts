@@ -505,11 +505,15 @@
 		#size-cells = <0>;
 
 		backlight = <&pmi8998_wled>;
+		/* TDDI: tlmm 120 powers the touch side of the controller;
+		 * display works without it but rmi4 NAKs (jenneron odin-7.1). */
+		enable-gpios = <&tlmm 120 GPIO_ACTIVE_HIGH>;
 		reset-gpios = <&tlmm 6 GPIO_ACTIVE_LOW>;
 		rotation = <90>;
 
 		pinctrl-names = "default";
-		pinctrl-0 = <&panel_reset_active &mdp_vsync_active>;
+		pinctrl-0 = <&panel_enable_active &panel_reset_active
+			     &mdp_vsync_active>;
 
 		port {
 			panel_in: endpoint {
@@ -1007,6 +1011,13 @@
 		pins = "gpio6";
 		function = "gpio";
 		drive-strength = <16>;
+		bias-disable;
+	};
+
+	panel_enable_active: panel-enable-active {
+		pins = "gpio120";
+		function = "gpio";
+		drive-strength = <2>;
 		bias-disable;
 	};
 
