@@ -134,6 +134,10 @@ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX=m
 
 # ============== LEDs / RGB ==============
 CONFIG_LEDS_HTR3212=m
+# AYN Odin side/joystick LEDs (gpio-leds in the DT)
+CONFIG_NEW_LEDS=y
+CONFIG_LEDS_CLASS=y
+CONFIG_LEDS_GPIO=y
 
 # ============== Haptics ==============
 CONFIG_INPUT_QCOM_HV_HAPTICS=m              # required by common.dtsi
