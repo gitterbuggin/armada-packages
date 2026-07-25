@@ -629,6 +629,11 @@
 		syna,reset-delay-ms = <200>;
 		syna,startup-delay-ms = <200>;
 
+		/* Touch shares power sequencing with the panel; without the
+		 * panel-follower tie-in the controller NAKs at early probe.
+		 */
+		panel = <&display_panel>;
+
 		pinctrl-names = "default";
 		pinctrl-0 = <&ts_int_active &ts_reset_active>;
 

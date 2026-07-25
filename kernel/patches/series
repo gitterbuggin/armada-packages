@@ -26,6 +26,7 @@
 0015-touchscreen-edt-ft5x06-allow-to-override-input-name.patch
 0030-input-rmi4-add-reset-gpio.patch
 0032-rmi4-silence-spam-irq-errors.patch
+0033-input-rmi4-i2c-drm-panel-follower.patch   # keep after 0030/0032 (same files)
 0053-add-hynitron-touchscreen.patch
 0053-edt-ft5x06-add-no_regmap_bulk_read-option.patch
 0059_AYN-Odin2-Mini--hynitron--cstxxx.patch
