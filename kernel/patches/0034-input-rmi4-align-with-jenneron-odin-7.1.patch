@@ -1,0 +1,418 @@
+From: Armada OS <armada@localhost>
+Subject: [PATCH] Input: rmi4 - align with jenneron odin-7.1 (touch bring-up)
+
+Wholesale alignment of rmi_i2c.c/rmi_driver.c/rmi_driver.h with
+gitlab.com/jenneron/linux odin-7.1 — the driver state the working pmOS
+AYN Odin port actually runs — replacing our older-generation
+0030/0033 combination. Key differences that made our touch NAK
+(rmi_set_page: set page failed: -6):
+ - no reset-gpio handling: 0030 acquired reset-gpios with
+   GPIOD_OUT_HIGH (logical active; the line is GPIO_ACTIVE_LOW), i.e.
+   probe held the controller IN RESET, hence the I2C NAK. The current
+   port leaves the controller as the bootloader left it, with the
+   ts_reset_active pinctrl keeping the line released.
+ - DRM panel-follower support for suspend/resume tied to panel
+   prepare/unprepare (pairs with panel = <&display_panel> in the DTS).
+Also re-applies our irq-read error silencing (was 0032).
+Replaces 0030-input-rmi4-add-reset-gpio.patch,
+0032-rmi4-silence-spam-irq-errors.patch and
+0033-input-rmi4-i2c-drm-panel-follower.patch in the series.
+
+--- a/drivers/input/rmi4/rmi_i2c.c
++++ b/drivers/input/rmi4/rmi_i2c.c
+@@ -9,6 +9,7 @@
+ #include <linux/of.h>
+ #include <linux/delay.h>
+ #include <linux/regulator/consumer.h>
++#include <drm/drm_panel.h>
+ #include "rmi_driver.h"
+ 
+ #define BUFFER_SIZE_INCREMENT 32
+@@ -27,6 +28,10 @@
+  *
+  * @supplies: Array of voltage regulators
+  * @startup_delay: Milliseconds to pause after powering up the regulators
++ *
++ * @panel_follower: DRM panel follower when the touch controller is tied to a panel
++ * @follows_panel: True when @panel_follower was registered
++ * @suspended_by_panel: True when the panel follower suspended the device
+  */
+ struct rmi_i2c_xport {
+ 	struct rmi_transport_dev xport;
+@@ -40,6 +45,10 @@
+ 
+ 	struct regulator_bulk_data supplies[2];
+ 	u32 startup_delay;
++
++	struct drm_panel_follower panel_follower;
++	bool follows_panel;
++	bool suspended_by_panel;
+ };
+ 
+ #define RMI_PAGE_SELECT_REGISTER 0xff
+@@ -196,8 +205,45 @@
+ 	struct rmi_i2c_xport *rmi_i2c = data;
+ 
+ 	rmi_unregister_transport_device(&rmi_i2c->xport);
++}
++
++static int rmi_i2c_panel_prepared(struct drm_panel_follower *follower)
++{
++	struct rmi_i2c_xport *rmi_i2c =
++		container_of(follower, struct rmi_i2c_xport, panel_follower);
++	int error;
++
++	if (!rmi_i2c->suspended_by_panel)
++		return 0;
++
++	msleep(rmi_i2c->startup_delay);
++
++	error = rmi_driver_resume(rmi_i2c->xport.rmi_dev, false);
++	rmi_i2c->suspended_by_panel = false;
++
++	return error;
++}
++
++static int rmi_i2c_panel_unpreparing(struct drm_panel_follower *follower)
++{
++	struct rmi_i2c_xport *rmi_i2c =
++		container_of(follower, struct rmi_i2c_xport, panel_follower);
++	int error;
++
++	if (rmi_i2c->suspended_by_panel)
++		return 0;
++
++	error = rmi_driver_suspend(rmi_i2c->xport.rmi_dev, false);
++	rmi_i2c->suspended_by_panel = true;
++
++	return error;
+ }
+ 
++static const struct drm_panel_follower_funcs rmi_i2c_panel_follower_funcs = {
++	.panel_prepared = rmi_i2c_panel_prepared,
++	.panel_unpreparing = rmi_i2c_panel_unpreparing,
++};
++
+ static int rmi_i2c_probe(struct i2c_client *client)
+ {
+ 	struct rmi_device_platform_data *pdata;
+@@ -284,6 +330,18 @@
+ 	if (error)
+ 		return error;
+ 
++	if (drm_is_panel_follower(&client->dev)) {
++		rmi_i2c->panel_follower.funcs = &rmi_i2c_panel_follower_funcs;
++
++		error = devm_drm_panel_add_follower(&client->dev,
++						    &rmi_i2c->panel_follower);
++		if (error)
++			return dev_err_probe(&client->dev, error,
++					     "failed to follow panel\n");
++
++		rmi_i2c->follows_panel = true;
++	}
++
+ 	return 0;
+ }
+ 
+@@ -293,6 +351,9 @@
+ 	struct rmi_i2c_xport *rmi_i2c = i2c_get_clientdata(client);
+ 	int ret;
+ 
++	if (rmi_i2c->follows_panel)
++		return 0;
++
+ 	ret = rmi_driver_suspend(rmi_i2c->xport.rmi_dev, true);
+ 	if (ret)
+ 		dev_warn(dev, "Failed to resume device: %d\n", ret);
+@@ -309,6 +370,9 @@
+ 	struct rmi_i2c_xport *rmi_i2c = i2c_get_clientdata(client);
+ 	int ret;
+ 
++	if (rmi_i2c->follows_panel)
++		return 0;
++
+ 	ret = regulator_bulk_enable(ARRAY_SIZE(rmi_i2c->supplies),
+ 				    rmi_i2c->supplies);
+ 	if (ret)
+@@ -329,6 +393,9 @@
+ 	struct rmi_i2c_xport *rmi_i2c = i2c_get_clientdata(client);
+ 	int ret;
+ 
++	if (rmi_i2c->follows_panel)
++		return 0;
++
+ 	ret = rmi_driver_suspend(rmi_i2c->xport.rmi_dev, false);
+ 	if (ret)
+ 		dev_warn(dev, "Failed to resume device: %d\n", ret);
+@@ -345,6 +412,9 @@
+ 	struct rmi_i2c_xport *rmi_i2c = i2c_get_clientdata(client);
+ 	int ret;
+ 
++	if (rmi_i2c->follows_panel)
++		return 0;
++
+ 	ret = regulator_bulk_enable(ARRAY_SIZE(rmi_i2c->supplies),
+ 				    rmi_i2c->supplies);
+ 	if (ret)
+--- a/drivers/input/rmi4/rmi_driver.c
++++ b/drivers/input/rmi4/rmi_driver.c
+@@ -137,11 +137,16 @@
+ 		return 0;
+ 
+ 	if (!data->attn_data.data) {
++		/*
++		 * Read the device status register as well and ignore it.
++		 * Some aftermarket ICs have issues with interrupt requests
++		 * otherwise.
++		 */
+ 		error = rmi_read_block(rmi_dev,
+-				data->f01_container->fd.data_base_addr + 1,
+-				data->irq_status, data->num_of_irq_regs);
++				data->f01_container->fd.data_base_addr,
++				(u8 *)data->irq_status - 1, data->num_of_irq_regs + 1);
+ 		if (error < 0) {
+-			dev_err(dev, "Failed to read irqs, code=%d\n", error);
++			// dev_err(dev, "Failed to read irqs, code=%d\n", error);
+ 			return error;
+ 		}
+ 	}
+@@ -457,9 +462,10 @@
+ 	return 0;
+ }
+ 
+-static int rmi_read_pdt_entry(struct rmi_device *rmi_dev,
+-			      struct pdt_entry *entry, u16 pdt_address)
++static int rmi_read_pdt_entry(struct rmi_device *rmi_dev, struct pdt_entry *entry,
++			      struct pdt_scan_state *state, u16 pdt_address)
+ {
++	const struct rmi_device_platform_data *pdata = rmi_get_platform_data(rmi_dev);
+ 	u8 buf[RMI_PDT_ENTRY_SIZE];
+ 	int error;
+ 
+@@ -470,6 +476,21 @@
+ 		return error;
+ 	}
+ 
++	if (pdata->pdt_fallback_size > state->pdt_count * RMI_OF_PDT_DESC_CELLS + 1) {
++		/* Use the description bytes from the driver */
++		buf[5] = pdata->pdt_fallback_desc[state->pdt_count * RMI_OF_PDT_DESC_CELLS];
++		buf[4] = pdata->pdt_fallback_desc[state->pdt_count * RMI_OF_PDT_DESC_CELLS + 1];
++
++		error = rmi_read_block(rmi_dev, pdt_address, buf,
++				RMI_PDT_ENTRY_SIZE - 2);
++		if (error) {
++			dev_err(&rmi_dev->dev,
++					"Read PDT entry at %#06x failed, code: %d.\n",
++					pdt_address, error);
++			return error;
++		}
++	}
++
+ 	entry->page_start = pdt_address & RMI4_PAGE_MASK;
+ 	entry->query_base_addr = buf[0];
+ 	entry->command_base_addr = buf[1];
+@@ -492,6 +513,33 @@
+ 	fd->function_number = pdt->function_number;
+ 	fd->interrupt_source_count = pdt->interrupt_source_count;
+ 	fd->function_version = pdt->function_version;
++}
++
++static bool rmi_pdt_entry_is_valid(struct rmi_device *rmi_dev,
++				   struct pdt_scan_state *state, u8 fn)
++{
++	switch (fn) {
++	case 0x01:
++	case 0x03:
++	case 0x11:
++	case 0x12:
++	case 0x30:
++	case 0x34:
++	case 0x3a:
++	case 0x54:
++	case 0x55:
++		if (state->pdts[fn] == true)
++			return false;
++		break;
++	default:
++		rmi_dbg(RMI_DEBUG_CORE, &rmi_dev->dev,
++			"PDT has unknown function number %#02x\n", fn);
++		return false;
++	}
++
++	state->pdts[fn] = true;
++	state->pdt_count++;
++	return true;
+ }
+ 
+ #define RMI_SCAN_CONTINUE	0
+@@ -499,7 +547,7 @@
+ 
+ static int rmi_scan_pdt_page(struct rmi_device *rmi_dev,
+ 			     int page,
+-			     int *empty_pages,
++			     struct pdt_scan_state *state,
+ 			     void *ctx,
+ 			     int (*callback)(struct rmi_device *rmi_dev,
+ 					     void *ctx,
+@@ -515,13 +563,16 @@
+ 	int retval;
+ 
+ 	for (addr = pdt_start; addr >= pdt_end; addr -= RMI_PDT_ENTRY_SIZE) {
+-		error = rmi_read_pdt_entry(rmi_dev, &pdt_entry, addr);
++		error = rmi_read_pdt_entry(rmi_dev, &pdt_entry, state, addr);
+ 		if (error)
+ 			return error;
+ 
+ 		if (RMI4_END_OF_PDT(pdt_entry.function_number))
+ 			break;
+ 
++		if (!rmi_pdt_entry_is_valid(rmi_dev, state, pdt_entry.function_number))
++			continue;
++
+ 		retval = callback(rmi_dev, ctx, &pdt_entry);
+ 		if (retval != RMI_SCAN_CONTINUE)
+ 			return retval;
+@@ -532,11 +583,11 @@
+ 	 * or more is found, stop scanning.
+ 	 */
+ 	if (addr == pdt_start)
+-		++*empty_pages;
++		++state->empty_pages;
+ 	else
+-		*empty_pages = 0;
++		state->empty_pages = 0;
+ 
+-	return (data->bootloader_mode || *empty_pages >= 2) ?
++	return (data->bootloader_mode || state->empty_pages >= 2) ?
+ 					RMI_SCAN_DONE : RMI_SCAN_CONTINUE;
+ }
+ 
+@@ -545,11 +596,11 @@
+ 		 void *ctx, const struct pdt_entry *entry))
+ {
+ 	int page;
+-	int empty_pages = 0;
++	struct pdt_scan_state state = {0, 0, {0}};
+ 	int retval = RMI_SCAN_DONE;
+ 
+ 	for (page = 0; page <= RMI4_MAX_PAGE; page++) {
+-		retval = rmi_scan_pdt_page(rmi_dev, page, &empty_pages,
++		retval = rmi_scan_pdt_page(rmi_dev, page, &state,
+ 					   ctx, callback);
+ 		if (retval != RMI_SCAN_CONTINUE)
+ 			break;
+@@ -989,9 +1040,13 @@
+ }
+ 
+ #ifdef CONFIG_OF
+-static int rmi_driver_of_probe(struct device *dev,
+-				struct rmi_device_platform_data *pdata)
++static const u8 rmi_s3706_fallback_pdt[] = {34, 41, 01, 01, 12, 01};
++
++static int rmi_driver_of_probe(struct rmi_device *rmi_dev,
++			       struct rmi_device_platform_data *pdata)
+ {
++	struct device *dev = rmi_dev->xport->dev;
++	u8 buf[RMI_PDT_ENTRY_SIZE];
+ 	int retval;
+ 
+ 	retval = rmi_of_property_read_u32(dev, &pdata->reset_delay_ms,
+@@ -999,11 +1054,37 @@
+ 	if (retval)
+ 		return retval;
+ 
++	/*
++	 * In some aftermerket touch ICs, the first PDT entry is empty and
++	 * the function number register is 0. If so, the driver
++	 * may have provide backup PDT entries.
++	 */
++
++	retval = rmi_read_block(rmi_dev, PDT_START_SCAN_LOCATION,
++			buf, RMI_PDT_ENTRY_SIZE);
++	if (retval) {
++		dev_err(dev, "Read PDT entry at %#06x failed, code: %d.\n",
++			PDT_START_SCAN_LOCATION, retval);
++		return retval;
++	}
++
++	if (!RMI4_END_OF_PDT(buf[5]))
++		return 0;
++
++	/* List of known PDT entries per compatible. */
++	if (of_device_is_compatible(dev->of_node, "syna,rmi4-s3706b")) {
++		pdata->pdt_fallback_desc = rmi_s3706_fallback_pdt;
++		pdata->pdt_fallback_size = ARRAY_SIZE(rmi_s3706_fallback_pdt);
++	} else {
++		dev_err(dev, "First PDT entry is empty and no backup values provided.\n");
++		return -EINVAL;
++	}
++
+ 	return 0;
+ }
+ #else
+-static inline int rmi_driver_of_probe(struct device *dev,
+-					struct rmi_device_platform_data *pdata)
++static inline int rmi_driver_of_probe(struct rmi_device *rmi_dev,
++				      struct rmi_device_platform_data *pdata)
+ {
+ 	return -ENODEV;
+ }
+@@ -1049,16 +1130,17 @@
+ 	data->num_of_irq_regs = (data->irq_count + 7) / 8;
+ 
+ 	size = BITS_TO_LONGS(data->irq_count) * sizeof(unsigned long);
+-	data->irq_memory = devm_kcalloc(dev, size, 4, GFP_KERNEL);
++	data->irq_memory = devm_kzalloc(dev, size * 4 + 1, GFP_KERNEL);
+ 	if (!data->irq_memory) {
+ 		dev_err(dev, "Failed to allocate memory for irq masks.\n");
+ 		return -ENOMEM;
+ 	}
+ 
+-	data->irq_status	= data->irq_memory + size * 0;
+-	data->fn_irq_bits	= data->irq_memory + size * 1;
+-	data->current_irq_mask	= data->irq_memory + size * 2;
+-	data->new_irq_mask	= data->irq_memory + size * 3;
++	/* The first byte is reserved for the device status register */
++	data->irq_status	= data->irq_memory + size * 0 + 1;
++	data->fn_irq_bits	= data->irq_memory + size * 1 + 1;
++	data->current_irq_mask	= data->irq_memory + size * 2 + 1;
++	data->new_irq_mask	= data->irq_memory + size * 3 + 1;
+ 
+ 	return retval;
+ }
+@@ -1123,7 +1205,7 @@
+ 	pdata = rmi_get_platform_data(rmi_dev);
+ 
+ 	if (rmi_dev->xport->dev->of_node) {
+-		retval = rmi_driver_of_probe(rmi_dev->xport->dev, pdata);
++		retval = rmi_driver_of_probe(rmi_dev, pdata);
+ 		if (retval)
+ 			return retval;
+ 	}
+--- a/drivers/input/rmi4/rmi_driver.h
++++ b/drivers/input/rmi4/rmi_driver.h
+@@ -31,6 +31,8 @@
+ #define RMI_PDT_FUNCTION_VERSION_MASK   0x60
+ #define RMI_PDT_INT_SOURCE_COUNT_MASK   0x07
+ 
++#define RMI_OF_PDT_DESC_CELLS 2
++
+ #define PDT_START_SCAN_LOCATION 0x00e9
+ #define PDT_END_SCAN_LOCATION	0x0005
+ #define RMI4_END_OF_PDT(id) ((id) == 0x00 || (id) == 0xff)
+@@ -46,6 +48,14 @@
+ 	u8 function_number;
+ };
+ 
++#define RMI_PDT_MAX 0x55
++
++struct pdt_scan_state {
++	u8 empty_pages;
++	u8 pdt_count;
++	bool pdts[RMI_PDT_MAX + 1];
++};
++
+ #define RMI_REG_DESC_PRESENSE_BITS	(32 * BITS_PER_BYTE)
+ #define RMI_REG_DESC_SUBPACKET_BITS	(37 * BITS_PER_BYTE)
+ 
