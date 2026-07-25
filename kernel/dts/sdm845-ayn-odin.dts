@@ -228,6 +228,22 @@
 			label = "btn_gpio15";
 			linux,code = <BTN_MODE>;
 		};
+
+		/* Back buttons (M2 right, M1 left). TRIGGER_HAPPY5/7 are what
+		 * inputplumber natively translates to RightPaddle1 (R4) and
+		 * LeftPaddle1 (L4); it has no mapping for pmOS's BTN_GRIPL/R.
+		 */
+		btn_gpio16 {
+			gpios = <&tlmm 24 GPIO_ACTIVE_LOW>;
+			label = "btn_gpio16";
+			linux,code = <BTN_TRIGGER_HAPPY5>;
+		};
+
+		btn_gpio17 {
+			gpios = <&tlmm 116 GPIO_ACTIVE_LOW>;
+			label = "btn_gpio17";
+			linux,code = <BTN_TRIGGER_HAPPY7>;
+		};
 	};
 
 	battery: battery {
@@ -974,7 +990,8 @@
 			pins =	"gpio96", "gpio95", "gpio41", "gpio92",
 				"gpio26", "gpio91", "gpio0", "gpio3",
 				"gpio40", "gpio22", "gpio124", "gpio128",
-				"gpio52", "gpio122", "gpio49";
+				"gpio52", "gpio122", "gpio49", "gpio24",
+				"gpio116";
 			function = "gpio";
 			drive-strength = <16>;
 			bias-pull-up;
