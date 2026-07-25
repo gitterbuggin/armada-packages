@@ -447,6 +447,13 @@
 			regulator-min-microvolt = <2856000>;
 			regulator-max-microvolt = <3008000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
+			/* DEBUG: touch vdd normally only powers during rmi4
+			 * probe (which fails), making i2cdetect scans of the
+			 * dead TDDI touch block meaningless. Keep it on so
+			 * bus 5 can be probed at leisure. Drop once touch
+			 * works. */
+			regulator-always-on;
+			regulator-boot-on;
 		};
 	};
 
