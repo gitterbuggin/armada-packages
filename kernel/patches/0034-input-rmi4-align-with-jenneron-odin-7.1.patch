@@ -416,3 +416,15 @@ Replaces 0030-input-rmi4-add-reset-gpio.patch,
  #define RMI_REG_DESC_PRESENSE_BITS	(32 * BITS_PER_BYTE)
  #define RMI_REG_DESC_SUBPACKET_BITS	(37 * BITS_PER_BYTE)
  
+--- a/include/linux/rmi.h
++++ b/include/linux/rmi.h
+@@ -214,6 +214,9 @@
+ 	int reset_delay_ms;
+ 	int irq;
+ 
++	unsigned int pdt_fallback_size;
++	const u8 *pdt_fallback_desc;
++
+ 	struct rmi_device_platform_data_spi spi_data;
+ 
+ 	/* function handler pdata */
