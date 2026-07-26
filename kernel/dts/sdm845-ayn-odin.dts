@@ -288,6 +288,36 @@
 		regulator-max-microvolt = <3700000>;
 	};
 
+	/* Active-cooling fan. Ported from jenneron odin-7.1 (mainline-native):
+	 * PWM on PMI8998 LPG channel 1 (routed to PMIC gpio5), enable on tlmm 44,
+	 * tach on tlmm 30. Exposed as a pwm-fan hwmon; armada-powerd drives its
+	 * curve (no kernel cooling-maps, matching the other Armada devices). The
+	 * Odin DTS previously had no fan node at all, so the fan ran uncontrolled
+	 * at full. pwm-inverted: this fan's PWM duty is active-low. */
+	fan_pwr: fan-pwr-regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "fan_pwr";
+		gpio = <&tlmm 44 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		pinctrl-names = "default";
+		pinctrl-0 = <&fan_en_active>;
+	};
+
+	fan: pwm-fan {
+		compatible = "pwm-fan";
+		#cooling-cells = <2>;
+		pwms = <&pmi8998_lpg 1 200000>;
+		fan-supply = <&fan_pwr>;
+		interrupts-extended = <&tlmm 30 IRQ_TYPE_EDGE_RISING>;
+		pulses-per-revolution = <2>;
+		pwm-inverted;
+		initial-pwm = <0>;
+		fan-supply-off-on-zero;
+		cooling-levels = <0 80 96 128 160 200 255>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&fan_tach_active &pwm_fan_active>;
+	};
+
 	vreg_s4a_1p8: pm8998-smps4 {
 		compatible = "regulator-fixed";
 		regulator-name = "vreg_s4a_1p8";
@@ -831,6 +861,23 @@
 	qcom,num-strings = <2>;
 };
 
+/* LPG provides the fan PWM (channel 1). */
+&pmi8998_lpg {
+	status = "okay";
+};
+
+&pmi8998_gpios {
+	pwm_fan_active: pwm-fan-active {
+		pins = "gpio5";
+		function = "func1";
+		bias-disable;
+		power-source = <0>;
+		output-high;
+		qcom,drive-strength = <PMIC_GPIO_STRENGTH_LOW>;
+		drive-push-pull;
+	};
+};
+
 &q6asmdai {
 	dai@0 {
 		reg = <0>;
@@ -1090,6 +1137,21 @@
 		function = "gpio";
 		drive-strength = <10>;
 		bias-pull-up;
+		input-enable;
+	};
+
+	fan_en_active: fan-en-active {
+		pins = "gpio44";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-pull-down;
+	};
+
+	fan_tach_active: fan-tach-active {
+		pins = "gpio30";
+		function = "gpio";
+		drive-strength = <8>;
+		bias-disable;
 		input-enable;
 	};
 };

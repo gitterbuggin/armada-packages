@@ -274,5 +274,7 @@ CONFIG_SND_SOC_WSA881X=m                    # soundwire speaker amps
 CONFIG_MFD_WCD934X=m
 CONFIG_CAN=m                                # odin dts has an mcp2517fd CAN controller on SPI
 CONFIG_CAN_MCP251XFD=m
+CONFIG_SENSORS_PWM_FAN=m                     # active-cooling fan as a pwm-fan hwmon (armada-powerd drives it)
+CONFIG_LEDS_QCOM_LPG=m                       # pmi8998 LPG = the fan's PWM source (pwms=<&pmi8998_lpg 1 ...>)
 
 CONFIG_DEVFREQ_GOV_PERFORMANCE=y
