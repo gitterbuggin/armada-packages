@@ -1,15 +1,18 @@
 #!/bin/bash
 set -euxo pipefail
-cd "$(dirname "$0")"; REPO=$PWD
+cd "$(dirname "$0")"
+REPO=$PWD
 source ./BASE.env
+source ../toolchain.env
 
-mkdir -p out; rm -f out/*
+mkdir -p out
+rm -f out/*
 podman run --rm \
-    -e VERSION="${VERSION}" \
-    -v "${REPO}:/work:Z" \
-    -w /work \
-    --platform linux/aarch64 \
-    "${BUILDER_IMAGE}" bash -euxc '
+  -e VERSION="${VERSION}" \
+  -v "${REPO}:/work:Z" \
+  -w /work \
+  --platform linux/aarch64 \
+  "${BUILDER_IMAGE}" bash -euxc '
     dnf -y install --skip-unavailable \
         rpm-build rpmdevtools spectool \
         cargo rust clang llvm bpftool git-core \

@@ -1,24 +1,37 @@
-#!/bin/bash
+#!/usr/bin/bash
+
 set -euxo pipefail
-cd "$(dirname "$0")"; REPO=$PWD
+
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
+PACKAGE_DIR="${PWD}"
 
 source ./BASE.env
 source ../toolchain.env
 
 REST="${SRPM#NetworkManager-}"
 NM_VER="${REST%%-*}"
-NM_REL="${REST#*-}"; NM_REL="${NM_REL%.fc*}"
-DIST=".fc44.armada"   # sorts above stock .fc44 so dnf upgrades to the armada build
+NM_REL="${REST#*-}"
+NM_REL="${NM_REL%.fc*}"
+DIST=".fc44.armada" # sorts above stock .fc44 so dnf upgrades to the armada build
 
 # Every NM subpackage the image installs must ship at one EVR: they cross-require
 # each other by exact version-release.
 SUBPKGS="NetworkManager NetworkManager-libnm NetworkManager-wifi NetworkManager-tui NetworkManager-cloud-setup"
 
-mkdir -p out; rm -f out/*
+rm -rf out
+mkdir -p out
+
 podman run --rm \
-    -e SRPM="${SRPM}" -e NM_VER="${NM_VER}" -e NM_REL="${NM_REL}" -e DIST="${DIST}" -e SUBPKGS="${SUBPKGS}" \
-    -v "${REPO}:/work:Z" -w /work --platform linux/aarch64 \
-    "${BUILDER_IMAGE}" bash -euxc '
+  --volume "${PACKAGE_DIR}:/work:Z" \
+  --workdir /work \
+  --platform linux/aarch64 \
+  --env SRPM="${SRPM}" \
+  --env NM_VER="${NM_VER}" \
+  --env NM_REL="${NM_REL}" \
+  --env DIST="${DIST}" \
+  --env SUBPKGS="${SUBPKGS}" \
+  "${BUILDER_IMAGE}" \
+  bash -euxo pipefail -c '
     export HOME=/tmp
     dnf -y install rpm-build rpmdevtools koji "dnf-command(builddep)" git-core
     rpmdev-setuptree
@@ -55,4 +68,5 @@ EOF
         cp "$HOME"/rpmbuild/RPMS/*/"${p}-${NM_VER}-${NM_REL}${DIST}".*.rpm /work/out/
     done
 '
-ls -l out/
+
+echo "built: ${PACKAGE_DIR}/out"

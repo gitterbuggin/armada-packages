@@ -1,13 +1,21 @@
-#!/bin/bash
-# Build the armada boot splash for aarch64 in a pinned Fedora container. Emits
-# out/armada-splash: one binary with fbdev (early boot) + x11 (gamescope phase)
-# backends. Links libX11.
-set -euxo pipefail
-cd "$(dirname "$0")"; REPO=$PWD
-source ../toolchain.env   # BUILDER_IMAGE; no BASE.env (first-party, no upstream pin)
+#!/usr/bin/bash
 
-mkdir -p out; rm -f out/*
-podman run --rm -v "${REPO}:/work:Z" -w /work --platform linux/aarch64 "${BUILDER_IMAGE}" bash -euxc '
+set -euxo pipefail
+
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
+PACKAGE_DIR="${PWD}"
+
+source ../toolchain.env
+
+rm -rf out
+mkdir -p out
+
+podman run --rm \
+  --volume "${PACKAGE_DIR}:/work:Z" \
+  --workdir /work \
+  --platform linux/aarch64 \
+  "${BUILDER_IMAGE}" \
+  bash -euxo pipefail -c '
     dnf -y install gcc libX11-devel
 
     # stb_truetype in its own TU (third-party; warnings suppressed).
@@ -18,5 +26,6 @@ podman run --rm -v "${REPO}:/work:Z" -w /work --platform linux/aarch64 "${BUILDE
 
     strip out/armada-splash
     rm -f stb_impl.o
-'
-echo "built: ${REPO}/out/armada-splash"
+  '
+
+echo "built: ${PACKAGE_DIR}/out"
