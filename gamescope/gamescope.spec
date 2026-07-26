@@ -7,7 +7,7 @@
 Name:           gamescope
 # overwritten from BASE.env by build.sh
 Version:        0
-Release:        1%{?dist}.armada
+Release:        2%{?dist}.armada
 Summary:        Micro-compositor for video games on Wayland
 # Automatically converted from old format: BSD - review is highly recommended.
 License:        LicenseRef-Callaway-BSD
@@ -33,6 +33,12 @@ Patch:          0004-DRMBackend-Add-GAMESCOPE_FAKE_OUTPUT_MM-env-to-set-c.patch
 Patch:          0005-feature-add-rotation-shader-for-rotating-output.patch
 Patch:          0006-steamcompmgr-fix-gamepad-cursor-sprite-frozen-via-XTest.patch
 Patch:          0007-steamcompmgr-fallback-appid-focus.patch
+Patch:          0008-drm-synthesize-edid-for-edidless-internal-panels.patch
+Patch:          0009-drm-support-known-display-profiles-for-edidless-panels.patch
+Patch:          0010-drm-compose-gamma22-hdr-without-hardware-color-management.patch
+Patch:          0011-wsi-filter-hdr-formats-by-underlying-support.patch
+Patch:          0012-color-scale-sdr-white-on-gamma22-hdr-output.patch
+Patch:          0013-expose-client-sampleable-formats.patch
 
 BuildRequires:  cmake
 BuildRequires:  catch-devel
@@ -122,12 +128,16 @@ export PKG_CONFIG_PATH=pkgconfig
     -Denable_gamescope=true \
     -Denable_gamescope_wsi_layer=true \
     -Denable_openvr_support=true \
+    -Denable_tests=true \
     -Dforce_fallback_for=[] \
     -Dinput_emulation=enabled \
     -Dpipewire=enabled \
     -Drt_cap=enabled \
     -Dsdl2_backend=enabled
 %meson_build
+
+%check
+%meson_test
 
 %install
 %meson_install --skip-subprojects
