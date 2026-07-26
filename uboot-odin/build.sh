@@ -72,8 +72,10 @@ podman run --rm \
             # BOOTDELAY=0: no autoboot countdown / "Press power button to stop
             # autoboot" prompt — boot straight through to the ESP bootflow.
             # VIDEO_LOGO off: no U-Boot submarine logo on the framebuffer, so the
-            # screen stays blank from power-on until Plymouth (video is still
-            # initialized for GRUB/Plymouth's EFI handoff, just nothing drawn).
+            # screen stays blank from power-on until Plymouth. Video init stays
+            # on for the GRUB and Plymouth EFI framebuffer handoff, just nothing
+            # is drawn. NOTE: no apostrophes in comments here — this whole block
+            # runs inside a single-quoted bash -euxc, and a stray quote breaks it.
             ./scripts/config --file .output/.config \
                 -d TOOLS_KWBIMAGE -d TOOLS_LIBCRYPTO \
                 -d FIT_SIGNATURE -d SPL_FIT_SIGNATURE -d VPL_FIT_SIGNATURE \
