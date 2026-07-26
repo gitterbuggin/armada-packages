@@ -16,6 +16,8 @@ to a commit, or `armada` if it's original; a URL source with no `notes` is verba
   source: https://github.com/ROCKNIX/distribution/blob/e485495a942daba186d4a8543e18a1ad09c9a5d5/projects/ROCKNIX/packages/linux/patches/7.0/0010-msm-resource-cleanup.patch
 - `patches/0048-drm-msm-dsi-reparent-byte-pixel-src-to-xo-on-disable.patch`
   source: https://github.com/ROCKNIX/distribution/blob/b59f018e09f04cc3020d60a93abb990318a551ba/projects/ROCKNIX/devices/SM8750/patches/linux/0048-drm-msm-dsi-reparent-byte-pixel-src-to-xo-on-disable.patch
+- `patches/0049-drm-msm-dpu-panel-opt-in-8bpc-dither.patch`
+  source: armada
 - `patches/0015-touchscreen-edt-ft5x06-allow-to-override-input-name.patch`
   source: https://github.com/ROCKNIX/distribution/blob/e485495a942daba186d4a8543e18a1ad09c9a5d5/projects/ROCKNIX/devices/SM8250/patches/linux/0015-touchscreen-edt-ft5x06-allow-to-override-input-name.patch
 - `patches/0026-dt-bindings-arm-qcom-ids-Add-SoC-ID-for-CQ8725S.patch`
@@ -248,6 +250,9 @@ to a commit, or `armada` if it's original; a URL source with no `notes` is verba
 - `dts/cq8725s-ayn-odin3.dts`
   source: https://github.com/ROCKNIX/distribution/blob/e485495a942daba186d4a8543e18a1ad09c9a5d5/projects/ROCKNIX/devices/SM8750/patches/linux/0047-arm64-dts-qcom-Add-AYN-Odin3.patch
   notes: modified — extracted (the DTS) from this ROCKNIX add-DTS patch
+- `dts/cq8725s-ayn-odin3.dts.patch`
+  source: armada
+  notes: edits dts/cq8725s-ayn-odin3.dts
 - `dts/qcs8550-ayaneo-pocket-common.dtsi.patch`
   source: armada
   notes: edits dts/qcs8550-ayaneo-pocket-common.dtsi
