@@ -71,9 +71,13 @@ podman run --rm \
             # and fails. qcom_defconfig defaults this to the -m2 board.
             # BOOTDELAY=0: no autoboot countdown / "Press power button to stop
             # autoboot" prompt — boot straight through to the ESP bootflow.
+            # VIDEO_LOGO off: no U-Boot submarine logo on the framebuffer, so the
+            # screen stays blank from power-on until Plymouth (video is still
+            # initialized for GRUB/Plymouth's EFI handoff, just nothing drawn).
             ./scripts/config --file .output/.config \
                 -d TOOLS_KWBIMAGE -d TOOLS_LIBCRYPTO \
                 -d FIT_SIGNATURE -d SPL_FIT_SIGNATURE -d VPL_FIT_SIGNATURE \
+                -d VIDEO_LOGO \
                 --set-val BOOTDELAY 0 \
                 --set-str DEFAULT_DEVICE_TREE "qcom/${board}"
             make O=.output CROSS_COMPILE="${CROSS_COMPILE}" olddefconfig
