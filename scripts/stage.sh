@@ -12,6 +12,6 @@ case "${pkg}" in
     lsfg-vk)      cp lsfg-vk/out/liblsfg-vk.so ctx/ ;;
     armada-splash) cp armada-splash/out/armada-splash ctx/ ;;
     kernel)       mkdir -p ctx/kernel && cp kernel/out/armada-kernel-*.tar.zst kernel/out/armada-kernel-*.tar.zst.sha256 ctx/kernel/ ;;
-    fex|mesa|mangohud|gamescope|inputplumber|networkmanager|jupiter-hw-support|scx-scheds) mkdir -p ctx/rpms && cp "${pkg}"/out/*.rpm ctx/rpms/ ;;
+    fex|mesa|mangohud|gamescope|inputplumber|networkmanager|jupiter-hw-support) mkdir -p ctx/rpms && cp "${pkg}"/out/*.rpm ctx/rpms/ ;;
     *) echo "unknown package: ${pkg}" >&2; exit 1 ;;
 esac
