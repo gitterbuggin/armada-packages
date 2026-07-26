@@ -1,0 +1,90 @@
+Teach pwm-fan about an active-low fan and a supply that gates the fan.
+
+The AYN Odin (SDM845) fan is driven off a PMI8998 LPG channel and is
+ACTIVE-LOW: low PWM duty = full speed, high duty = stopped. Neither mainline
+pwm-fan (polarity comes only from the pwms specifier) nor leds-qcom-lpg (its
+.apply hard-rejects PWM_POLARITY_INVERTED and offers no of_pwm_xlate_with_flags)
+can express this in the device tree, so a normal pwm-fan hwmon runs the fan at
+~full whenever it thinks it is idling.
+
+Honour three device-tree properties (already present in sdm845-ayn-odin.dts,
+matching the jenneron odin tree the node was ported from) instead of silently
+ignoring them:
+
+  pwm-inverted             invert the pwm-value -> duty-cycle mapping so a
+                           higher hwmon pwm1 value means a faster fan
+  fan-supply-off-on-zero   at pwm1=0, cut the fan-supply regulator for a true
+                           OFF (on an active-low fan duty 0 == full speed, so
+                           holding the line is not enough)
+  initial-pwm = <N>        the pwm value to program at probe (default 70, the
+                           value the ROCKNIX 0500 boot-fanspeed patch hardcodes);
+                           the Odin sets 0 so the fan stays off during boot until
+                           armada-powerd takes over
+
+Applies on top of 0500-ROCKNIX-set-boot-fanspeed.patch (which turned the probe
+call into set_pwm(ctx, 70)). Devices that do not set these properties are
+unaffected: pwm_inverted/fan_off_on_zero default false and initial-pwm falls
+back to 70, preserving current behaviour.
+
+diff -rupbN linux.orig/drivers/hwmon/pwm-fan.c linux/drivers/hwmon/pwm-fan.c
+--- linux.orig/drivers/hwmon/pwm-fan.c
++++ linux/drivers/hwmon/pwm-fan.c
+@@ -68,6 +68,8 @@ struct pwm_fan_ctx {
+ 	u64 pwm_duty_cycle_from_stopped;
+ 	u32 pwm_usec_from_stopped;
+ 	u8 pwm_shutdown;
++	bool pwm_inverted;
++	bool fan_off_on_zero;
+ };
+
+ static void sample_timer(struct timer_list *t)
+@@ -215,7 +217,9 @@ static int  __set_pwm(struct pwm_fan_ctx
+ 		if (update)
+ 			state->duty_cycle = ctx->pwm_duty_cycle_from_stopped;
+ 		else
+-			state->duty_cycle = DIV_ROUND_UP(pwm * (period - 1), MAX_PWM);
++			state->duty_cycle = ctx->pwm_inverted ?
++				DIV_ROUND_UP((MAX_PWM - pwm) * (period - 1), MAX_PWM) :
++				DIV_ROUND_UP(pwm * (period - 1), MAX_PWM);
+ 		ret = pwm_apply_might_sleep(ctx->pwm, state);
+ 		if (ret)
+ 			return ret;
+@@ -223,13 +227,17 @@ static int  __set_pwm(struct pwm_fan_ctx
+ 		ret = pwm_fan_power_on(ctx);
+ 		if (!ret && update) {
+ 			pwm = final_pwm;
+-			state->duty_cycle = DIV_ROUND_UP(pwm * (period - 1), MAX_PWM);
++			state->duty_cycle = ctx->pwm_inverted ?
++				DIV_ROUND_UP((MAX_PWM - pwm) * (period - 1), MAX_PWM) :
++				DIV_ROUND_UP(pwm * (period - 1), MAX_PWM);
+ 			usleep_range(ctx->pwm_usec_from_stopped,
+ 				     ctx->pwm_usec_from_stopped * 2);
+ 			ret = pwm_apply_might_sleep(ctx->pwm, state);
+ 		}
+ 	} else {
+-		ret = pwm_fan_power_off(ctx, false);
++		ret = pwm_fan_power_off(ctx, ctx->fan_off_on_zero);
++		if (!ret && ctx->fan_off_on_zero)
++			ret = pwm_fan_switch_power(ctx, false);
+ 	}
+ 	if (!ret)
+ 		ctx->pwm_value = pwm;
+@@ -505,4 +514,7 @@ static int pwm_fan_probe(struct platform
+ 	if (!ret && pwm_shutdown_percent)
+ 		ctx->pwm_shutdown = (clamp(pwm_shutdown_percent, 0, 100) * 255) / 100;
+
++	ctx->pwm_inverted = device_property_read_bool(dev, "pwm-inverted");
++	ctx->fan_off_on_zero = device_property_read_bool(dev, "fan-supply-off-on-zero");
++
+ 	ret = device_property_read_u32(dev, "fan-stop-to-start-percent",
+@@ -527,7 +539,9 @@ static int pwm_fan_probe(struct platform
+ 	 * Set duty cycle to maximum allowed and enable PWM output as well as
+ 	 * the regulator. In case of error nothing is changed
+ 	 */
+-	ret = set_pwm(ctx, 70);
++	if (device_property_read_u32(dev, "initial-pwm", &initial_pwm))
++		initial_pwm = 70;
++	ret = set_pwm(ctx, initial_pwm);
+ 	if (ret) {
+ 		dev_err(dev, "Failed to configure PWM: %d\n", ret);
+ 		return ret;

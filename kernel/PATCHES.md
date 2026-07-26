@@ -118,6 +118,13 @@ to a commit, or `armada` if it's original; a URL source with no `notes` is verba
   source: https://github.com/ROCKNIX/distribution/blob/e485495a942daba186d4a8543e18a1ad09c9a5d5/projects/ROCKNIX/devices/SM8550/patches/linux/0200-ASoC-wcd938x-add-DMIC-DAPM-inputs.patch
 - `patches/0500-ROCKNIX-set-boot-fanspeed.patch`
   source: https://github.com/ROCKNIX/distribution/blob/e485495a942daba186d4a8543e18a1ad09c9a5d5/projects/ROCKNIX/devices/SM8550/patches/linux/0500-ROCKNIX-set-boot-fanspeed.patch
+- `patches/0502-armada-pwm-fan-active-low.patch`
+  source: locally authored (Armada) — applies on top of 0500
+  notes: honour pwm-inverted / fan-supply-off-on-zero / initial-pwm in pwm-fan so
+    the active-low AYN Odin (SDM845) fan runs the right direction. Mainline pwm-fan
+    ignores these props and leds-qcom-lpg rejects PWM_POLARITY_INVERTED, so there is
+    no DT-only fix. No-op on devices that don't set the props. See sdm845-ayn-odin.dts
+    pwm-fan node.
 - `patches/0501-ROCKNIX-fix-wifi-and-bt-mac.patch`
   source: https://github.com/ROCKNIX/distribution/blob/e485495a942daba186d4a8543e18a1ad09c9a5d5/projects/ROCKNIX/devices/SM8550/patches/linux/0501-ROCKNIX-fix-wifi-and-bt-mac.patch
 - `patches/0503-ROCKNIX-battery-name.patch`
