@@ -64,7 +64,8 @@ EOF
         # two-pass: %generate_buildrequires emits a nosrc; install its BRs then build for real
         dnf -y builddep \"\$SPEC\"
         rpmbuild -bb --define \"dist ${DIST}\" \"\$SPEC\" || true
-        NOSRC=\$(ls \$HOME/rpmbuild/SRPMS/mesa-${MESA_VER}-*${DIST}.buildreqs.nosrc.rpm 2>/dev/null | head -1)
+        NOSRC=\$(find \"\$HOME/rpmbuild/SRPMS\" -maxdepth 1 -type f \
+            -name 'mesa-${MESA_VER}-*${DIST}.buildreqs.nosrc.rpm' -print -quit)
         [ -n \"\$NOSRC\" ] && dnf -y builddep \"\$NOSRC\"
         rpmbuild -bb --define \"dist ${DIST}\" \"\$SPEC\"
         ccache -s
