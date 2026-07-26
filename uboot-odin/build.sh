@@ -42,6 +42,16 @@ podman run --rm \
         git -C "${SRC}" fetch --depth 1 "${REPO_URL}" "${COMMIT}"
         git -C "${SRC}" checkout -q FETCH_HEAD
         cd "${SRC}"
+        # Quiet boot: log U-Boot to serial only, not the display (vidconsole),
+        # so the screen stays blank from power-on until Plymouth takes over.
+        # Serial still carries the full log for debugging. default.env is the
+        # compiled-in env (CONFIG_USE_DEFAULT_ENV_FILE), shared by both boards.
+        sed -i -e "s/^stdout=serial,vidconsole/stdout=serial/" \
+               -e "s/^stderr=serial,vidconsole/stderr=serial/" \
+               board/qualcomm/default.env
+        grep -q "^stdout=serial$" board/qualcomm/default.env \
+            && grep -q "^stderr=serial$" board/qualcomm/default.env \
+            || { echo "ERROR: default.env console sed did not match"; exit 1; }
         for board in sdm845-ayn-odin sdm845-ayn-odin-m2; do
             rm -rf .output
             make O=.output CROSS_COMPILE="${CROSS_COMPILE}" qcom_defconfig
@@ -59,9 +69,12 @@ podman run --rm \
             # DEVICE_TREE= only changes which .dtb the final existence check
             # looks for — so mixing them builds -m2 but checks for the non-m2
             # and fails. qcom_defconfig defaults this to the -m2 board.
+            # BOOTDELAY=0: no autoboot countdown / "Press power button to stop
+            # autoboot" prompt — boot straight through to the ESP bootflow.
             ./scripts/config --file .output/.config \
                 -d TOOLS_KWBIMAGE -d TOOLS_LIBCRYPTO \
                 -d FIT_SIGNATURE -d SPL_FIT_SIGNATURE -d VPL_FIT_SIGNATURE \
+                --set-val BOOTDELAY 0 \
                 --set-str DEFAULT_DEVICE_TREE "qcom/${board}"
             make O=.output CROSS_COMPILE="${CROSS_COMPILE}" olddefconfig
             # Fail loudly if a board/def selector re-enabled it despite the above.
