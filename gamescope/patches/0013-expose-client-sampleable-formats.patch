@@ -2,9 +2,10 @@ From: enjihn <150061999+enjihn@users.noreply.github.com>
 Subject: [PATCH] main: add opt-in --expose-client-sampleable-formats
 
 Let the inner Wayland server advertise DMA-BUF formats and modifiers that
-Vulkan can import and sample even when KMS planes cannot scan them out.
-The default backend intersection is unchanged; direct scanout stays
-protected by the DRM framebuffer import check.
+Vulkan can import and sample even when KMS planes cannot scan them out,
+via the option or the GAMESCOPE_EXPOSE_CLIENT_SAMPLEABLE_FORMATS
+environment variable. The default backend intersection is unchanged;
+direct scanout stays protected by the DRM framebuffer import check.
 
 diff --git a/src/ClientFormatPolicy.h b/src/ClientFormatPolicy.h
 new file mode 100644
@@ -70,7 +71,7 @@ index fe2f4199f864aae727231b4b94d5508f9cb6a8d5..133b8768531f3db3d6b00e13b4c9a0f0
  					cv_shutdown_on_primary_child_death = false;
  				} else if (strcmp(opt_name, "virtual-connector-strategy") == 0) {
 diff --git a/src/rendervulkan.cpp b/src/rendervulkan.cpp
-index 0be72f64a97828bede626a4334f365b279d4444b..8049efa784264c5d867515349506739de1d55317 100644
+index 0be72f64a97828bede626a4334f365b279d4444b..b5cfb79d9e5c353b14edbf0614edce567d32e4cb 100644
 --- a/src/rendervulkan.cpp
 +++ b/src/rendervulkan.cpp
 @@ -33,6 +33,7 @@
@@ -129,10 +130,15 @@ index 0be72f64a97828bede626a4334f365b279d4444b..8049efa784264c5d867515349506739d
  
  		wlr_drm_format_set_add( &sampledDRMFormats, drmFormat, DRM_FORMAT_MOD_INVALID );
  		return false;
-@@ -2902,6 +2918,11 @@ bool vulkan_init_format(VkFormat format, uint32_t drmFormat)
+@@ -2902,6 +2918,16 @@ bool vulkan_init_format(VkFormat format, uint32_t drmFormat)
  
  bool vulkan_init_formats()
  {
++	if ( env_to_bool( getenv( "GAMESCOPE_EXPOSE_CLIENT_SAMPLEABLE_FORMATS" ) ) )
++	{
++		g_bExposeClientSampleableFormats = true;
++	}
++
 +	if ( g_bExposeClientSampleableFormats )
 +	{
 +		vk_log.infof( "exposing Vulkan-sampleable client DMA-BUF formats without the output scanout intersection" );
