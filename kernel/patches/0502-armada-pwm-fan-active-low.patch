@@ -29,16 +29,16 @@ back to 70, preserving current behaviour.
 diff -rupbN linux.orig/drivers/hwmon/pwm-fan.c linux/drivers/hwmon/pwm-fan.c
 --- linux.orig/drivers/hwmon/pwm-fan.c
 +++ linux/drivers/hwmon/pwm-fan.c
-@@ -68,6 +68,8 @@ struct pwm_fan_ctx {
+@@ -65,6 +65,8 @@
  	u64 pwm_duty_cycle_from_stopped;
  	u32 pwm_usec_from_stopped;
  	u8 pwm_shutdown;
 +	bool pwm_inverted;
 +	bool fan_off_on_zero;
  };
-
- static void sample_timer(struct timer_list *t)
-@@ -215,7 +217,9 @@ static int  __set_pwm(struct pwm_fan_ctx
+ 
+ /* This handler assumes self resetting edge triggered interrupt. */
+@@ -219,20 +221,26 @@
  		if (update)
  			state->duty_cycle = ctx->pwm_duty_cycle_from_stopped;
  		else
@@ -49,7 +49,6 @@ diff -rupbN linux.orig/drivers/hwmon/pwm-fan.c linux/drivers/hwmon/pwm-fan.c
  		ret = pwm_apply_might_sleep(ctx->pwm, state);
  		if (ret)
  			return ret;
-@@ -223,13 +227,17 @@ static int  __set_pwm(struct pwm_fan_ctx
  		ret = pwm_fan_power_on(ctx);
  		if (!ret && update) {
  			pwm = final_pwm;
@@ -69,15 +68,15 @@ diff -rupbN linux.orig/drivers/hwmon/pwm-fan.c linux/drivers/hwmon/pwm-fan.c
  	}
  	if (!ret)
  		ctx->pwm_value = pwm;
-@@ -505,4 +514,7 @@ static int pwm_fan_probe(struct platform
- 	if (!ret && pwm_shutdown_percent)
- 		ctx->pwm_shutdown = (clamp(pwm_shutdown_percent, 0, 100) * 255) / 100;
-
+@@ -561,12 +569,17 @@
+ 		initial_pwm = ctx->pwm_fan_cooling_levels[ctx->pwm_fan_max_state];
+ 	else
+ 		initial_pwm = MAX_PWM;
++
 +	ctx->pwm_inverted = device_property_read_bool(dev, "pwm-inverted");
 +	ctx->fan_off_on_zero = device_property_read_bool(dev, "fan-supply-off-on-zero");
-+
- 	ret = device_property_read_u32(dev, "fan-stop-to-start-percent",
-@@ -527,7 +539,9 @@ static int pwm_fan_probe(struct platform
+ 
+ 	/*
  	 * Set duty cycle to maximum allowed and enable PWM output as well as
  	 * the regulator. In case of error nothing is changed
  	 */
