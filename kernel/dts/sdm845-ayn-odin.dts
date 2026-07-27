@@ -877,9 +877,28 @@
 	qcom,num-strings = <2>;
 };
 
-/* LPG provides the fan PWM (channel 1). */
+/*
+ * LPG channel 1 (base 0xb100) -> fan PWM, consumed by pwm-fan (above).
+ * LPG channel 4 (base 0xb400, triled BIT(6)) -> the green power/charge LED: the
+ * green sink of the PMI8998 RGB tri-LED (triled_base 0xd000). Red (ch5) and blue
+ * (ch3) sinks are unpopulated on the Odin, so green is the sole power-button
+ * indicator. Wiring verified against AYN's downstream kernel (green_led =
+ * qcom,rgb_1, qcom,id 4, pwms=<&pmi8998_pwm_4>) and mainline pmi8998_lpg_data
+ * (channel base 0xb400 = reg 4, triled-connected). Exposed as
+ * /sys/class/leds/green:indicator; fake-suspend blanks it while asleep.
+ */
 &pmi8998_lpg {
 	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	led@4 {
+		reg = <4>;
+		color = <LED_COLOR_ID_GREEN>;
+		function = LED_FUNCTION_INDICATOR;
+		/* Lit whenever the device is awake (power indicator). */
+		default-state = "on";
+	};
 };
 
 &pmi8998_gpios {
