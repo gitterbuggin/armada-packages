@@ -617,6 +617,22 @@
 	};
 };
 
+/* AYN Odin "High Performance" 787.2 MHz GPU overclock. Mainline's a630 table
+ * tops at 710 MHz @ TURBO_L1 (the highest rpmh corner), so this runs at the
+ * SAME voltage — a genuine overclock, but AYN ships it on Android's High
+ * Performance mode so the a630 is capable. The a6xx GMU builds its freq table
+ * from this OPP table (GMU_MAX_GX_FREQS=32, plenty of room); armada-powerd's
+ * Performance profile (gpu_max=1.0) reaches this new top step, while Eco/Balanced
+ * cap at 710 (gpu_max=0.95). Validate on-device: watch dmesg for a6xx/gmu faults
+ * under sustained load; drop this node to fall back to 710 if unstable. */
+&gpu_opp_table {
+	opp-787200000 {
+		opp-hz = /bits/ 64 <787200000>;
+		opp-level = <RPMH_REGULATOR_LEVEL_TURBO_L1>;
+		opp-peak-kBps = <7216000>;
+	};
+};
+
 &i2c4 {
 	status = "okay";
 	clock-frequency = <400000>;
