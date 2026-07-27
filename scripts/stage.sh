@@ -9,6 +9,8 @@ pkg="${1:?usage: stage.sh <package>}"
 rm -rf ctx && mkdir -p ctx
 case "${pkg}" in
     extest)       cp extest/out/libextest.so ctx/ ;;
+    lsfg-vk)      cp lsfg-vk/out/liblsfg-vk.so ctx/ ;;
+    armada-splash) cp armada-splash/out/armada-splash ctx/ ;;
     kernel)       mkdir -p ctx/kernel && cp kernel/out/armada-kernel-*.tar.zst kernel/out/armada-kernel-*.tar.zst.sha256 ctx/kernel/ ;;
     uboot-odin)   mkdir -p ctx/uboot && cp uboot-odin/out/uboot-ayn-odin*.img uboot-odin/out/SHA256SUMS ctx/uboot/ ;;
     tqftpserv)    cp tqftpserv/out/tqftpserv ctx/ ;;

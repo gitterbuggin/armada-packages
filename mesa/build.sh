@@ -1,25 +1,37 @@
-#!/bin/bash
+#!/usr/bin/bash
+
 set -euxo pipefail
-cd "$(dirname "$0")"; REPO=$PWD
+
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
+PACKAGE_DIR="${PWD}"
 
 source ./BASE.env
 source ../toolchain.env
+
 SRPM_NVR="$SRPM"
-MESA_VER="${SRPM_NVR#mesa-}"; MESA_VER="${MESA_VER%%-*}"
+MESA_VER="${SRPM_NVR#mesa-}"
+MESA_VER="${MESA_VER%%-*}"
+
 # Rawhide SRPM (BASE.env pins the fcNN) rebuilt on fedora:44 for the runtime ABI.
 DIST=".fc44.armada"
 SUBPKGS="mesa-filesystem mesa-libgbm mesa-dri-drivers mesa-vulkan-drivers mesa-libGL mesa-libEGL"
 
 # ccache: CI persists CCACHE_DIR; default to a repo-local dir for dev builds
-CCACHE_DIR="${CCACHE_DIR:-${REPO}/.ccache}"; mkdir -p "${CCACHE_DIR}"
+CCACHE_DIR="${CCACHE_DIR:-${PACKAGE_DIR}/.ccache}"
+mkdir -p "${CCACHE_DIR}"
 
-mkdir -p out; rm -f out/*
-podman run --rm "${ARMADA_PODMAN_SECOPTS[@]}" \
-    -v "${REPO}:/work:Z" -w /work \
-    -v "${CCACHE_DIR}:/ccache:Z" \
-    -e CCACHE_DIR=/ccache -e CCACHE_MAXSIZE=2G \
-    --platform linux/arm64 \
-    "${BUILDER_IMAGE}" bash -euxc "
+rm -rf out
+mkdir -p out
+
+podman run --rm \
+  --volume "${PACKAGE_DIR}:/work:Z" \
+  --volume "${CCACHE_DIR}:/ccache:Z" \
+  --workdir /work \
+  --platform linux/arm64 \
+  --env CCACHE_DIR=/ccache \
+  --env CCACHE_MAXSIZE=2G \
+  "${BUILDER_IMAGE}" \
+  bash -euxo pipefail -c "
         export HOME=/tmp
         dnf -y install rpm-build rpmdevtools koji 'dnf-command(builddep)' ccache
         export PATH=/usr/lib64/ccache:\$PATH CC=gcc CXX=g++
@@ -52,7 +64,8 @@ EOF
         # two-pass: %generate_buildrequires emits a nosrc; install its BRs then build for real
         dnf -y builddep \"\$SPEC\"
         rpmbuild -bb --define \"dist ${DIST}\" \"\$SPEC\" || true
-        NOSRC=\$(ls \$HOME/rpmbuild/SRPMS/mesa-${MESA_VER}-*${DIST}.buildreqs.nosrc.rpm 2>/dev/null | head -1)
+        NOSRC=\$(find \"\$HOME/rpmbuild/SRPMS\" -maxdepth 1 -type f \
+            -name 'mesa-${MESA_VER}-*${DIST}.buildreqs.nosrc.rpm' -print -quit)
         [ -n \"\$NOSRC\" ] && dnf -y builddep \"\$NOSRC\"
         rpmbuild -bb --define \"dist ${DIST}\" \"\$SPEC\"
         ccache -s
@@ -61,3 +74,5 @@ EOF
             cp \$HOME/rpmbuild/RPMS/*/\${p}-${MESA_VER}-*${DIST}.*.rpm /work/out/
         done
     "
+
+echo "built: ${PACKAGE_DIR}/out"
