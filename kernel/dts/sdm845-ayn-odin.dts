@@ -262,10 +262,18 @@
 		type = "d";
 
 		hdmi-pwr-supply = <&hdmi_en_reg>;
-		hpd-gpios = <&tlmm 121 GPIO_ACTIVE_HIGH>;
 
-		pinctrl-names = "default";
-		pinctrl-0 = <&hdmi_hpd>;
+		/*
+		 * No HPD and no DDC/EDID are wired on the Odin (per the pmOS
+		 * port notes): the LT8912B's hotplug and DDC lines don't reach
+		 * the micro-HDMI connector. gpio121 was a fabricated HPD — with
+		 * it, display-connector.detect() read the floating pin low and
+		 * reported the sink permanently "disconnected", so KMS never
+		 * enabled the pipe even with a monitor attached. Dropping it (no
+		 * hpd-gpios, no ddc-i2c-bus) makes detect() fall through to an
+		 * unconditional "connected". Modes come from an injected EDID /
+		 * video= karg instead, since the bridge can't read the sink.
+		 */
 
 		port {
 			hdmi_con: endpoint {
@@ -1198,14 +1206,6 @@
 		function = "mdp_vsync";
 		drive-strength = <2>;
 		bias-pull-down;
-	};
-
-	hdmi_hpd: hdmi-hpd-active {
-		pins = "gpio121";
-		function = "gpio";
-		drive-strength = <10>;
-		bias-pull-up;
-		input-enable;
 	};
 
 	fan_en_active: fan-en-active {
