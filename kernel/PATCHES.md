@@ -242,6 +242,12 @@ to a commit, or `armada` if it's original; a URL source with no `notes` is verba
 - `patches/0702-power-supply-add-qcom-fg-and-pmi8998-fg-node.patch`
   source: https://gitlab.com/jenneron/linux/-/blob/87349bbdebbd62f0a235cdcc31dc25f507fc444f/drivers/power/supply/qcom_fg.c
   notes: fuel-gauge driver + minimal pmi8998.dtsi node (haptics parts of the jenneron dtsi diff dropped)
+- `patches/0710-power-supply-qcom-fg-fix-current-now-sign.patch`
+  source: armada
+  notes: qcom_fg reports current_now with the wrong sign (negative while charging). UPower's
+    up-device-supply-battery.c forces state=discharging on current_now < 0, so the Steam/gamescope
+    battery icon never shows charging. Negates current_now to match the Linux power-supply ABI.
+    Applies on top of 0702.
 - `patches/0703-input-add-qcom-spmi-haptics-driver.patch`
   source: https://gitlab.com/jenneron/linux/-/blob/odin-7.1/drivers/input/misc/qcom-spmi-haptics.c
   notes: pmi8998 SPMI HAP driver (Caleb/Casey Connolly, never mainlined — stalled at v7 2022)

@@ -1,0 +1,61 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Contributor <me@Contributorr.co>
+Date: Tue, 28 Jul 2026 13:20:00 -0500
+Subject: [PATCH] power: supply: qcom_fg: report current_now with ABI sign
+
+The qcom_fg gen3 (pmi8998) fuel gauge on the AYN Odin reports
+POWER_SUPPLY_PROP_CURRENT_NOW as negative while charging and positive
+while discharging. That is the opposite of the Linux power-supply ABI,
+which defines current_now as positive when charging and negative when
+discharging.
+
+UPower's up-device-supply-battery.c has a quirk (added for axp20x-style
+batteries) that, regardless of POWER_SUPPLY_STATUS, forces the device
+state to DISCHARGING whenever current_now < 0 and the battery is not
+full:
+
+	values.state = up_device_supply_get_state (native);
+	if (values.state != UP_DEVICE_STATE_FULLY_CHARGED &&
+	    get_sysfs_attr_uncached (native, "current_now") < 0.0)
+		values.state = UP_DEVICE_STATE_DISCHARGING;
+
+Because the FG reports a negative current_now while charging, UPower
+reports the battery as "discharging" even though status=Charging and the
+pmi8998-charger line-power supply is online. Steam / gamescope read the
+UPower state, so the battery indicator never shows the charging bolt
+while plugged in.
+
+Flip the reported sign at the property boundary so it matches the ABI.
+The internal current-sign fallback in the status property and consumers
+that use magnitude only (mangohud uses fabs()) are unaffected.
+
+Signed-off-by: Contributor <me@Contributorr.co>
+---
+ drivers/power/supply/qcom_fg.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/drivers/power/supply/qcom_fg.c b/drivers/power/supply/qcom_fg.c
+index 0000000..1111111 100644
+--- a/drivers/power/supply/qcom_fg.c
++++ b/drivers/power/supply/qcom_fg.c
+@@ -983,5 +983,18 @@ static int qcom_fg_get_property(struct power_supply *psy,
+ 	case POWER_SUPPLY_PROP_CURRENT_NOW:
+ 		ret = chip->ops->get_current(chip, &val->intval);
++		/*
++		 * The Linux power-supply ABI defines current_now as positive
++		 * while charging and negative while discharging. This FG
++		 * reports the opposite sign, which makes UPower
++		 * (up-device-supply-battery.c) override status=Charging and
++		 * report the battery as "discharging" whenever
++		 * current_now < 0 -- so the Steam/gamescope battery icon never
++		 * shows the charging state. Flip the sign to match the ABI.
++		 * The internal status fallback reads get_current() directly and
++		 * magnitude-only consumers (mangohud) use fabs(), so neither is
++		 * affected by this.
++		 */
++		val->intval = -val->intval;
+ 		break;
+ 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
+ 		ret = chip->ops->get_voltage(chip, &val->intval);
+--
+2.52.0
