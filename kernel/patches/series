@@ -113,6 +113,7 @@ sm8750-adreno-a830-gpu-driver.patch
 0700-input-add-ayn-odin-gamepad-driver.patch
 0701-drm-panel-add-innolux-td4328-panel.patch
 0702-power-supply-add-qcom-fg-and-pmi8998-fg-node.patch
+0703-input-add-qcom-spmi-haptics-driver.patch   # pmi8998 HAP; anchored clear of 1000 (hv-haptics)
 0704-iio-adc5-add-gpio-voltage-channels.patch
 0705-slimbus-ngd-restore-1s-autosuspend.patch
 0706-ASoC-wsa881x-select-DRE-gain-when-comp-port-active.patch

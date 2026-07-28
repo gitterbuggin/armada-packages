@@ -242,3 +242,12 @@ to a commit, or `armada` if it's original; a URL source with no `notes` is verba
 - `patches/0702-power-supply-add-qcom-fg-and-pmi8998-fg-node.patch`
   source: https://gitlab.com/jenneron/linux/-/blob/87349bbdebbd62f0a235cdcc31dc25f507fc444f/drivers/power/supply/qcom_fg.c
   notes: fuel-gauge driver + minimal pmi8998.dtsi node (haptics parts of the jenneron dtsi diff dropped)
+- `patches/0703-input-add-qcom-spmi-haptics-driver.patch`
+  source: https://gitlab.com/jenneron/linux/-/blob/odin-7.1/drivers/input/misc/qcom-spmi-haptics.c
+  notes: pmi8998 SPMI HAP driver (Caleb/Casey Connolly, never mainlined — stalled at v7 2022)
+    + include/dt-bindings/input/qcom,spmi-haptics.h, verbatim from odin-7.1. Kconfig/Makefile
+    hunks re-anchored (SPARCSPKR / powermate..pwm-vibra) to apply after 1000 (hv-haptics), which
+    edits the same files at pmic8xxx-pwrkey. DT node in dts/sdm845-ayn-odin.dts (&pmi8998_lsid1
+    haptics@c000, ERM/direct per AYN Android). KNOWN GAP: driver's ERM/direct-play path is
+    incomplete upstream ("TODO unsupported") — the Odin's motor may need driver work; iterate on
+    device. See [[odin-open-items]] haptics.

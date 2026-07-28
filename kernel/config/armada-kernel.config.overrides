@@ -141,6 +141,7 @@ CONFIG_LEDS_GPIO=y
 
 # ============== Haptics ==============
 CONFIG_INPUT_QCOM_HV_HAPTICS=m              # required by common.dtsi
+CONFIG_INPUT_QCOM_SPMI_HAPTICS=m            # AYN Odin (pmi8998) vibration motor — patch 0703
 
 # ============== PWM ==============
 CONFIG_PWM_SN3112=m
