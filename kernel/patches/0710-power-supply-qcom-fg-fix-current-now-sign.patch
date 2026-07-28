@@ -35,7 +35,7 @@ Signed-off-by: Contributor <me@Contributorr.co>
  1 file changed, 13 insertions(+)
 
 diff --git a/drivers/power/supply/qcom_fg.c b/drivers/power/supply/qcom_fg.c
-index 0000000..1111111 100644
+index 9c3f0aa..8b1d2e5 100644
 --- a/drivers/power/supply/qcom_fg.c
 +++ b/drivers/power/supply/qcom_fg.c
 @@ -983,5 +983,18 @@ static int qcom_fg_get_property(struct power_supply *psy,
