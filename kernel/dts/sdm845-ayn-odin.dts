@@ -1019,6 +1019,11 @@
 
 	audio-routing =
 		"RX_BIAS", "MCLK",
+		/* Internal (bottom) mic: analog on AMIC1/ADC1, powered by MIC BIAS1.
+		 * Confirmed by AYN's Android mixer_paths_tavil.xml (handset-mic ->
+		 * AMIC MUX0=ADC1). AMIC2/MIC BIAS2 below is the HEADSET (TRRS) mic,
+		 * gated on headset-detect — which is why it never powered on its own. */
+		"AMIC1", "MIC BIAS1",
 		"AMIC2", "MIC BIAS2",
 		"SpkrLeft IN", "SPK1 OUT",
 		"SpkrRight IN", "SPK2 OUT",
