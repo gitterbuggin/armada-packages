@@ -640,7 +640,8 @@
 
 &i2c4 {
 	status = "okay";
-	clock-frequency = <400000>;
+	/* The LT8912B programming guide limits its I2C bus to 100 kHz. */
+	clock-frequency = <100000>;
 
 	hdmi-bridge@48 {
 		compatible = "lontium,lt8912b";
