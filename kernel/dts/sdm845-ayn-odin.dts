@@ -264,15 +264,11 @@
 		hdmi-pwr-supply = <&hdmi_en_reg>;
 
 		/*
-		 * No HPD and no DDC/EDID are wired on the Odin (per the pmOS
-		 * port notes): the LT8912B's hotplug and DDC lines don't reach
-		 * the micro-HDMI connector. gpio121 was a fabricated HPD — with
-		 * it, display-connector.detect() read the floating pin low and
-		 * reported the sink permanently "disconnected", so KMS never
-		 * enabled the pipe even with a monitor attached. Dropping it (no
-		 * hpd-gpios, no ddc-i2c-bus) makes detect() fall through to an
-		 * unconditional "connected". Modes come from an injected EDID /
-		 * video= karg instead, since the bridge can't read the sink.
+		 * No SoC HPD GPIO or DDC/EDID bus is described for the Odin.
+		 * gpio121 did not track the connector and reported the sink
+		 * permanently disconnected, so leave HPD polling to the
+		 * LT8912B's internal cable-status register. Modes come from a
+		 * video= karg because the bridge driver cannot read sink EDID.
 		 */
 
 		port {
@@ -650,6 +646,20 @@
 		compatible = "lontium,lt8912b";
 		reg = <0x48>;
 		reset-gpios = <&tlmm 12 GPIO_ACTIVE_LOW>;
+
+		/*
+		 * GPIO13 switches the bridge rail. The LT8912B driver enables
+		 * these supplies before polling its internal HPD status; without
+		 * them the chip is unpowered and its registers are unreadable
+		 * when HDMI is unplugged.
+		 */
+		vdd-supply = <&hdmi_en_reg>;
+		vccmipirx-supply = <&hdmi_en_reg>;
+		vccsysclk-supply = <&hdmi_en_reg>;
+		vcclvdstx-supply = <&hdmi_en_reg>;
+		vcchdmitx-supply = <&hdmi_en_reg>;
+		vcclvdspll-supply = <&hdmi_en_reg>;
+		vcchdmipll-supply = <&hdmi_en_reg>;
 
 		ports {
 			#address-cells = <1>;
